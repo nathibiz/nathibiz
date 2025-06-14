@@ -52,7 +52,12 @@
     <section id="businessRegistration" class="hidden">
       <h2>Register Your Business</h2>
       <form id="businessForm">
+        <input type="text" id="ownerName" placeholder="Owner Name" required><br>
+        <input type="text" id="ownerId" placeholder="ID/Passport Number" required><br>
+        <input type="tel" id="contactNumber" placeholder="Contact Number (e.g., +27xxxxxxxxx)" required><br>
+        <input type="text" id="residentialAddress" placeholder="Residential Address" required><br>
         <input type="text" id="businessName" placeholder="Business Name" required><br>
+        <input type="tel" id="businessContactNumber" placeholder="Business Contact Number (e.g., +27xxxxxxxxx)" required><br>
         <select id="businessType" required>
           <option value="" disabled selected>Select Business Type</option>
           <option value="Spaza/Tuck shop">Spaza/Tuck shop</option>
@@ -66,13 +71,9 @@
           <option value="Other">Other</option>
         </select><br>
         <input type="text" id="businessTypeOther" placeholder="Specify Business Type" class="conditional"><br>
-        <input type="text" id="ownerName" placeholder="Owner Name" required><br>
-        <input type="text" id="ownerId" placeholder="ID/Passport Number" required><br>
-        <input type="tel" id="contactNumber" placeholder="Contact Number (e.g., +27xxxxxxxxx)" required><br>
-        <input type="text" id="physicalAddress" placeholder="Physical Address" required><br>
-        <input type="text" id="postalAddress" placeholder="Postal Address" required><br>
-        <input type="text" id="googleMapsUrl" placeholder="Google Maps URL (e.g., https://www.google.com/maps/place/...)"><br>
-        <button type="button" onclick="getCurrentLocation()">Send Your Location</button><br>
+        <input type="text" id="businessAddress" placeholder="Business Address" required><br>
+        <input type="text" id="googleMapsUrl" placeholder="Location for Business (Google Maps URL, optional)"><br>
+        <input type="text" id="municipalityName" placeholder="Municipality Name" required><br>
         <input type="number" id="operationYears" placeholder="Years in Operation" min="0" required><br>
         <input type="number" id="operationMonths" placeholder="Months in Operation" min="0" max="11" required><br>
         <select id="hasBusinessAccount" required>
@@ -99,9 +100,6 @@
       <button onclick="signOut()">Sign Out</button>
       <h3>Business Details</h3>
       <div id="businessDetails"></div>
-      <div id="businessMap" style="margin-top: 20px;">
-        <iframe id="mapIframe" width="100%" height="300" frameborder="0" style="border:0" allowfullscreen></iframe>
-      </div>
       <h3>Track Sales and Expenses</h3>
       <form id="salesForm">
         <input type="number" id="saleAmount" placeholder="Sale Amount" required step="0.01"><br>
@@ -201,7 +199,6 @@
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
         console.log('Sign-in successful, UID:', userCredential.user.uid);
         document.getElementById('debug').innerText += `Sign-in successful, UID: ${userCredential.user.uid}\n`;
-        // Ensure state change is handled
         auth.onAuthStateChanged(user => {
           if (user && user.uid && typeof user.uid === 'string') {
             const businessRef = db.collection('businesses').doc(user.uid);
@@ -252,30 +249,6 @@
       });
     }
 
-    // Google Maps handling
-    function getEmbedUrl(googleMapsUrl) {
-      if (!googleMapsUrl) return '';
-      try {
-        if (googleMapsUrl.includes('embed')) {
-          return googleMapsUrl;
-        }
-        const coordMatch = googleMapsUrl.match(/@([-.\d]+),([-.\d]+)/) || googleMapsUrl.match(/q=([-.\d]+),([-.\d]+)/);
-        if (coordMatch) {
-          const lat = coordMatch[1];
-          const lng = coordMatch[2];
-          return `https://www.google.com/maps/embed/v1/place?q=${lat},${lng}&zoom=15`;
-        }
-        const placeMatch = googleMapsUrl.match(/place\/([^/]+)/);
-        if (placeMatch) {
-          const place = encodeURIComponent(placeMatch[1]);
-          return `https://www.google.com/maps/embed/v1/place?q=${place}&zoom=15`;
-        }
-      } catch (error) {
-        console.error('Error parsing Google Maps URL:', error);
-      }
-      return '';
-    }
-
     function getCurrentLocation() {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
@@ -284,7 +257,7 @@
             const lng = position.coords.longitude;
             const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
             document.getElementById('googleMapsUrl').value = mapsUrl;
-            alert('Location set in Google Maps URL field.');
+            alert('Location set in Location for Business field (for reference only).');
           },
           (error) => {
             console.error('Geolocation error:', error);
@@ -296,7 +269,6 @@
       }
     }
 
-    // Business form logic
     document.getElementById('businessType').addEventListener('change', (e) => {
       const otherField = document.getElementById('businessTypeOther');
       otherField.classList.toggle('conditional', e.target.value !== 'Other');
@@ -311,15 +283,17 @@
 
     document.getElementById('businessForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const businessName = document.getElementById('businessName').value;
-      let businessType = document.getElementById('businessType').value;
-      const businessTypeOther = document.getElementById('businessTypeOther').value;
       const ownerName = document.getElementById('ownerName').value;
       const ownerId = document.getElementById('ownerId').value;
       const contactNumber = document.getElementById('contactNumber').value;
-      const physicalAddress = document.getElementById('physicalAddress').value;
-      const postalAddress = document.getElementById('postalAddress').value;
-      let googleMapsUrl = document.getElementById('googleMapsUrl').value;
+      const residentialAddress = document.getElementById('residentialAddress').value;
+      const businessName = document.getElementById('businessName').value;
+      const businessContactNumber = document.getElementById('businessContactNumber').value;
+      let businessType = document.getElementById('businessType').value;
+      const businessTypeOther = document.getElementById('businessTypeOther').value;
+      const businessAddress = document.getElementById('businessAddress').value;
+      const googleMapsUrl = document.getElementById('googleMapsUrl').value;
+      const municipalityName = document.getElementById('municipalityName').value;
       const operationYears = parseInt(document.getElementById('operationYears').value);
       const operationMonths = parseInt(document.getElementById('operationMonths').value);
       const hasBusinessAccount = document.getElementById('hasBusinessAccount').value;
@@ -338,23 +312,23 @@
         alert('Please enter a valid contact number (e.g., +27xxxxxxxxx).');
         return;
       }
-
-      const embedUrl = getEmbedUrl(googleMapsUrl);
-      if (googleMapsUrl && !embedUrl) {
-        console.warn('Invalid Google Maps URL:', googleMapsUrl);
+      if (!/^\+?\d{10,15}$/.test(businessContactNumber)) {
+        alert('Please enter a valid business contact number (e.g., +27xxxxxxxxx).');
+        return;
       }
 
       if (user) {
         await db.collection('businesses').doc(user.uid).set({
-          businessName,
-          businessType: businessType === 'Other' ? businessTypeOther : businessType,
           ownerName,
           ownerId,
           contactNumber,
-          physicalAddress,
-          postalAddress,
+          residentialAddress,
+          businessName,
+          businessContactNumber,
+          businessType: businessType === 'Other' ? businessTypeOther : businessType,
+          businessAddress,
           googleMapsUrl,
-          embedUrl,
+          municipalityName,
           operationYears,
           operationMonths,
           hasBusinessAccount,
@@ -375,26 +349,19 @@
         if (businessDoc.exists) {
           const data = businessDoc.data();
           document.getElementById('businessDetails').innerHTML = `
-            <p><strong>Business Name:</strong> ${data.businessName}</p>
-            <p><strong>Business Type:</strong> ${data.businessType}</p>
-            <p><strong>Owner:</strong> ${data.ownerName}</p>
+            <p><strong>Owner Name:</strong> ${data.ownerName}</p>
             <p><strong>ID/Passport:</strong> ${data.ownerId}</p>
             <p><strong>Contact Number:</strong> ${data.contactNumber}</p>
-            <p><strong>Physical Address:</strong> ${data.physicalAddress}</p>
-            <p><strong>Postal Address:</strong> ${data.postalAddress}</p>
-            <p><strong>Location:</strong> <a href="${data.googleMapsUrl}" target="_blank">${data.googleMapsUrl || 'Not set'}</a></p>
+            <p><strong>Residential Address:</strong> ${data.residentialAddress}</p>
+            <p><strong>Business Name:</strong> ${data.businessName}</p>
+            <p><strong>Business Contact Number:</strong> ${data.businessContactNumber}</p>
+            <p><strong>Business Type:</strong> ${data.businessType}</p>
+            <p><strong>Business Address:</strong> ${data.businessAddress}</p>
+            <p><strong>Location URL:</strong> <a href="${data.googleMapsUrl}" target="_blank">${data.googleMapsUrl || 'Not set'}</a></p>
+            <p><strong>Municipality Name:</strong> ${data.municipalityName}</p>
             <p><strong>Operation Time:</strong> ${data.operationYears} years, ${data.operationMonths} months</p>
             <p><strong>Business Account:</strong> ${data.hasBusinessAccount}${data.bankName ? ' (' + data.bankName + ')' : ''}</p>
           `;
-          const mapIframe = document.getElementById('mapIframe');
-          if (data.embedUrl) {
-            mapIframe.src = data.embedUrl;
-            mapIframe.style.display = 'block';
-            console.log('Map iframe set to:', data.embedUrl);
-          } else {
-            mapIframe.style.display = 'none';
-            console.log('No valid map URL; iframe hidden');
-          }
         } else {
           showSection('businessRegistration');
         }
