@@ -35,8 +35,7 @@
         </select><br>
         <input type="email" id="signInEmail" placeholder="Email" class="email-input"><br>
         <input type="tel" id="signInPhone" placeholder="Phone Number (e.g., +27xxxxxxxxx)" class="phone-input hidden"><br>
-        <input type="password" id="signInPassword" placeholder="Password" class="email-input"><br>
-        <div id="recaptcha-container" class="phone-input hidden"></div>
+        <input type="password" id="signInPassword" placeholder="Password" required><br>
         <button type="submit">Sign In</button>
       </form>
       <p>Don't have an account? <a href="#" id="showRegister">Register</a></p>
@@ -51,8 +50,7 @@
         </select><br>
         <input type="email" id="registerEmail" placeholder="Email" class="email-input"><br>
         <input type="tel" id="registerPhone" placeholder="Phone Number (e.g., +27xxxxxxxxx)" class="phone-input hidden"><br>
-        <input type="password" id="registerPassword" placeholder="Password" class="email-input"><br>
-        <div id="recaptcha-container-register" class="phone-input hidden"></div>
+        <input type="password" id="registerPassword" placeholder="Password" required><br>
         <button type="submit">Register</button>
       </form>
       <p>Already have an account? <a href="#" id="showSignIn">Sign In</a></p>
@@ -184,70 +182,87 @@
     document.getElementById('showSignIn').addEventListener('click', () => showSection('auth'));
 
     // Toggle auth method
-    function toggleAuthInputs(method, formType) {
-      const emailInputs = document.querySelectorAll(`#${formType}Form .email-input`);
-      const phoneInputs = document.querySelectorAll(`#${formType}Form .phone-input`);
+    function toggleAuthInputs(method) {
+      const emailInputs = document.querySelectorAll('#signInForm .email-input');
+      const phoneInputs = document.querySelectorAll('#signInForm .phone-input');
       emailInputs.forEach(input => input.classList.toggle('hidden', method !== 'email'));
       phoneInputs.forEach(input => input.classList.toggle('hidden', method !== 'phone'));
-      if (method === 'phone') {
-        const recaptchaId = formType === 'signIn' ? 'recaptcha-container' : 'recaptcha-container-register';
-        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier(recaptchaId, {
-          'size': 'normal',
-          'callback': () => {}
-        });
-      }
     }
 
-    document.getElementById('signInMethod').addEventListener('change', (e) => toggleAuthInputs(e.target.value, 'signIn'));
-    document.getElementById('registerMethod').addEventListener('change', (e) => toggleAuthInputs(e.target.value, 'register'));
+    document.getElementById('signInMethod').addEventListener('change', (e) => toggleAuthInputs(e.target.value));
 
     document.getElementById('signInForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const method = document.getElementById('signInMethod').value;
-      if (method === 'email') {
-        const email = document.getElementById('signInEmail').value;
-        const password = document.getElementById('signInPassword').value;
-        try {
+      const password = document.getElementById('signInPassword').value;
+
+      try {
+        if (method === 'email') {
+          const email = document.getElementById('signInEmail').value;
           await auth.signInWithEmailAndPassword(email, password);
-        } catch (error) {
-          alert('Error signing in: ' + error.message);
-        }
-      } else {
-        const phone = document.getElementById('signInPhone').value;
-        try {
-          const confirmationResult = await auth.signInWithPhoneNumber(phone, window.recaptchaVerifier);
-          const code = prompt('Enter the verification code sent to your phone:');
-          if (code) {
-            await confirmationResult.confirm(code);
+          console.log('Signed in with email:', email);
+        } else {
+          const phone = document.getElementById('signInPhone').value;
+          if (!/^\+?\d{10,15}$/.test(phone)) {
+            alert('Please enter a valid phone number (e.g., +27xxxxxxxxx).');
+            return;
           }
-        } catch (error) {
-          alert('Error signing in with phone: ' + error.message);
+          // Check if phone is linked to an account
+          const phoneDoc = await firebase.firestore().getDoc(firebase.firestore().doc(db, 'phoneMappings', phone));
+          if (phoneDoc.exists()) {
+            const linkedEmail = phoneDoc.data().email;
+            await auth.signInWithEmailAndPassword(linkedEmail, password);
+            console.log('Signed in with phone-linked email:', linkedEmail);
+          } else {
+            alert('Phone number not registered. Please register first.');
+          }
         }
+      } catch (error) {
+        console.error('Sign-in error:', error.code, error.message);
+        alert('Error signing in: ' + error.message);
       }
     });
 
     document.getElementById('registerForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const method = document.getElementById('registerMethod').value;
-      if (method === 'email') {
-        const email = document.getElementById('registerEmail').value;
-        const password = document.getElementById('registerPassword').value;
-        try {
+      const password = document.getElementById('registerPassword').value;
+
+      try {
+        if (method === 'email') {
+          const email = document.getElementById('registerEmail').value;
           await auth.createUserWithEmailAndPassword(email, password);
-        } catch (error) {
-          alert('Error registering: ' + error.message);
-        }
-      } else {
-        const phone = document.getElementById('registerPhone').value;
-        try {
-          const confirmationResult = await auth.signInWithPhoneNumber(phone, window.recaptchaVerifier);
+          console.log('Registered with email:', email);
+        } else {
+          const phone = document.getElementById('registerPhone').value;
+          if (!/^\+?\d{10,15}$/.test(phone)) {
+            alert('Please enter a valid phone number (e.g., +27xxxxxxxxx).');
+            return;
+          }
+          // Send SMS code
+          const appVerifier = new firebase.auth.RecaptchaVerifier('sign-in-button', {
+            'size': 'invisible'
+          });
+          const confirmationResult = await auth.signInWithPhoneNumber(phone, appVerifier);
           const code = prompt('Enter the verification code sent to your phone:');
           if (code) {
-            await confirmationResult.confirm(code);
+            const userCredential = await confirmationResult.confirm(code);
+            const user = userCredential.user;
+            const linkedEmail = `phone${phone}@nathibiz.com`;
+            // Link password to phone account
+            await user.updateEmail(linkedEmail);
+            await user.updatePassword(password);
+            // Store phone-to-email mapping
+            await firebase.firestore().setDoc(firebase.firestore().doc(db, 'phoneMappings', phone), {
+              email: linkedEmail,
+              userId: user.uid
+            });
+            console.log('Registered with phone:', phone, 'linked to email:', linkedEmail);
           }
-        } catch (error) {
-          alert('Error registering with phone: ' + error.message);
         }
+      } catch (error) {
+        console.error('Registration error:', error.code, error.message);
+        alert('Error registering: ' + error.message);
       }
     });
 
@@ -526,7 +541,7 @@
         });
 
         expenses = expenses.filter(expense => {
-          const expenseDate = new Date(exercise.date);
+          const expenseDate = new Date(expense.date);
           return expenseDate >= startDate && expenseDate < endDate;
         });
 
