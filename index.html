@@ -540,20 +540,20 @@
         let startDate = new Date(now.getFullYear(), now.getMonth(), 1);
         let endDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
-        sales = sales.filter(sale => {
+        let filteredSales = sales.filter(sale => {
           const saleDate = new Date(sale.date);
           return saleDate >= startDate && saleDate < endDate;
         });
 
-        expenses = expenses.filter(expense => {
+        let filteredExpenses = expenses.filter(expense => {
           const expenseDate = new Date(expense.date);
           return expenseDate >= startDate && expenseDate < endDate;
         });
 
-        const totalSales = sales.reduce((sum, sale) => sum + sale.amount, 0) || 0;
-        const totalCosts = sales.reduce((sum, sale) => sum + sale.cost, 0) || 0;
+        const totalSales = filteredSales.reduce((sum, sale) => sum + sale.amount, 0) || 0;
+        const totalCosts = filteredSales.reduce((sum, sale) => sum + sale.cost, 0) || 0;
         const income = totalSales - totalCosts;
-        const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0) || 0;
+        const totalExpenses = filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0) || 0;
         const profit = income - totalExpenses;
 
         const csvData = [
@@ -565,7 +565,7 @@
           totalSales.toFixed(2),
           totalCosts.toFixed(2),
           income.toFixed(2),
-          expenses.length > 0 ? expenses.map(exp => `${exp.category}: R${exp.amount.toFixed(2)}`).join(', ') : 'None',
+          filteredExpenses.length > 0 ? filteredExpenses.map(exp => `${exp.category}: R${exp.amount.toFixed(2)}`).join(', ') : 'None',
           profit.toFixed(2)
         ]);
 
