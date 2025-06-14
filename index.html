@@ -7,9 +7,9 @@
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" type="image/png" href="/icon-192x192.png">
   <link rel="apple-touch-icon" href="/icon-512x512.png">
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
   <style>
     body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f3f4f6; }
     .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
@@ -172,7 +172,8 @@
       console.log('Auth state changed:', user ? `User ${user?.uid}, Email: ${user?.email}` : 'No user');
       document.getElementById('debug').innerText += `Auth state: ${user ? `Signed in as ${user.email}` : 'No user'}\n`;
       if (user && user.uid) {
-        firebase.firestore().getDoc(firebase.firestore().doc(db, 'businesses', user.uid)).then(doc => {
+        const businessRef = firebase.firestore().doc(db, 'businesses', user.uid);
+        firebase.firestore().getDoc(businessRef).then(doc => {
           console.log('Business check result:', doc.exists());
           document.getElementById('debug').innerText += `Business check: ${doc.exists() ? 'Exists' : 'Not found'}\n`;
           showSection(doc.exists() ? 'dashboard' : 'businessRegistration');
@@ -203,7 +204,8 @@
         // Ensure state change is handled
         auth.onAuthStateChanged(user => {
           if (user) {
-            firebase.firestore().getDoc(firebase.firestore().doc(db, 'businesses', user.uid)).then(doc => {
+            const businessRef = firebase.firestore().doc(db, 'businesses', user.uid);
+            firebase.firestore().getDoc(businessRef).then(doc => {
               showSection(doc.exists() ? 'dashboard' : 'businessRegistration');
             }).catch(error => {
               console.error('Error checking business:', error);
