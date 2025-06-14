@@ -63,7 +63,10 @@
     </section>
 
     <section id="businessRegistration" class="hidden">
-      <h2>Register Your Business</h2>
+      <div class="business-hub">
+        <a href="#" onclick="showSection('dashboard')">←</a>
+        <h2>Register Your Business</h2>
+      </div>
       <form id="businessForm">
         <input type="text" id="ownerName" placeholder="Owner Name" required><br>
         <input type="text" id="ownerId" placeholder="ID/Passport Number" required><br>
@@ -123,7 +126,7 @@
           Sales Tracking
         </button>
         <button class="hub-button" onclick="showSection('reports')">
-          <img src="https://img.icons8.com/ios-filled/50/047857/report.png" alt="Reports">
+          <img src="https://img.icons8.com/ios-filled/50/047857/statistics.png" alt="Reports">
           Reports
         </button>
         <button class="hub-button" onclick="showSection('exportData')">
@@ -172,7 +175,7 @@
         <input type="date" id="expenseDate" required><br>
         <button type="submit">Add Expense</button>
       </form>
-      <table id="transactionsTable">
+      <table id="salesTable">
         <tr>
           <th>Date</th>
           <th>Amount</th>
@@ -437,7 +440,10 @@
         if (businessDoc.exists) {
           const data = businessDoc.data();
           document.getElementById('businessRegistration').innerHTML = `
-            <h2>Register Your Business</h2>
+            <div class="business-hub">
+              <a href="#" onclick="showSection('dashboard')">←</a>
+              <h2>Register Your Business</h2>
+            </div>
             <p><strong>Owner Name:</strong> ${data.ownerName}</p>
             <p><strong>ID/Passport:</strong> ${data.ownerId}</p>
             <p><strong>Contact Number:</strong> ${data.contactNumber}</p>
@@ -462,7 +468,7 @@
       if (user) {
         const salesSnapshot = await db.collection('sales').where('userId', '==', user.uid).get();
         const expensesSnapshot = await db.collection('expenses').where('userId', '==', user.uid).get();
-        const table = document.getElementById('transactionsTable');
+        const table = document.getElementById('salesTable');
         table.innerHTML = `
           <tr>
             <th>Date</th>
@@ -480,17 +486,6 @@
             <td>R${data.amount.toFixed(2)}</td>
             <td>R${data.cost.toFixed(2)}</td>
             <td>Sale</td>
-          `;
-        });
-
-        expensesSnapshot.docs.forEach(doc => {
-          const data = doc.data();
-          const row = table.insertRow();
-          row.innerHTML = `
-            <td>${data.date}</td>
-            <td>R${data.amount.toFixed(2)}</td>
-            <td>${data.category}</td>
-            <td>Expense</td>
           `;
         });
       }
@@ -534,7 +529,6 @@
         });
         alert('Expense added successfully!');
         document.getElementById('expensesForm').reset();
-        loadSalesAndExpenses();
       }
     });
 
@@ -576,6 +570,19 @@
         const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
         const profit = totalSales - totalCosts - totalExpenses;
 
+        let expensesTable = '';
+        if (expenses.length > 0) {
+          expensesTable = `
+            <h3>Expenses</h3>
+            <table>
+              <tr><th>Date</th><th>Amount</th><th>Category</th></tr>
+              ${expenses.map(exp => `
+                <tr><td>${exp.date}</td><td>R${exp.amount.toFixed(2)}</td><td>${exp.category}</td></tr>
+              `).join('')}
+            </table>
+          `;
+        }
+
         document.getElementById('reportOutput').innerHTML = `
           <h3>${period.charAt(0).toUpperCase() + period.slice(1)} Report</h3>
           <table>
@@ -585,6 +592,7 @@
             <tr><td>Total Expenses</td><td>R${totalExpenses.toFixed(2)}</td></tr>
             <tr><td>Profit</td><td>R${profit.toFixed(2)}</td></tr>
           </table>
+          ${expensesTable}
         `;
       }
     }
