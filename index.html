@@ -32,10 +32,10 @@
     th { background-color: #f9fafb; }
     .conditional { display: none; }
     #debug { color: #666; font-size: 12px; margin-top: 10px; }
-    #transactionsTable th:nth-child(1), #transactionsTable td:nth-child(1) { width: 20%; }
-    #transactionsTable th:nth-child(2), #transactionsTable td:nth-child(2) { width: 20%; }
-    #transactionsTable th:nth-child(3), #transactionsTable td:nth-child(3) { width: 20%; }
-    #transactionsTable th:nth-child(4), #transactionsTable td:nth-child(4) { width: 40%; }
+    #salesTable th:nth-child(1), #salesTable td:nth-child(1) { width: 20%; }
+    #salesTable th:nth-child(2), #salesTable td:nth-child(2) { width: 20%; }
+    #salesTable th:nth-child(3), #salesTable td:nth-child(3) { width: 20%; }
+    #salesTable th:nth-child(4), #salesTable td:nth-child(4) { width: 40%; }
   </style>
 </head>
 <body>
@@ -159,27 +159,11 @@
         <input type="date" id="saleDate" required><br>
         <button type="submit">Add Sale</button>
       </form>
-      <form id="expensesForm">
-        <input type="number" id="expenseAmount" placeholder="Expense Amount" required step="0.01"><br>
-        <select id="expenseCategory" required>
-          <option value="" disabled selected>Select Expense Category</option>
-          <option value="Rent">Rent</option>
-          <option value="Water & Electricity">Water & Electricity</option>
-          <option value="Airtime & Data">Airtime & Data</option>
-          <option value="Transport/Fuel">Transport/Fuel</option>
-          <option value="Salaries/Wages">Salaries/Wages</option>
-          <option value="Marketing">Marketing</option>
-          <option value="Supplies">Supplies</option>
-          <option value="Other">Other</option>
-        </select><br>
-        <input type="date" id="expenseDate" required><br>
-        <button type="submit">Add Expense</button>
-      </form>
       <table id="salesTable">
         <tr>
           <th>Date</th>
           <th>Amount</th>
-          <th>Cost/Category</th>
+          <th>Cost</th>
           <th>Type</th>
         </tr>
       </table>
@@ -263,7 +247,7 @@
       if (sectionId === 'dashboard') {
         loadBusinessDetails();
       } else if (sectionId === 'salesTracking') {
-        loadSalesAndExpenses();
+        loadSales();
       }
       console.log(`Showing section: ${sectionId}`);
       document.getElementById('debug').innerText += `Showing section: ${sectionId}\n`;
@@ -458,22 +442,138 @@
             <p><strong>Business Account:</strong> ${data.hasBusinessAccount}${data.bankName ? ' (' + data.bankName + ')' : ''}</p>
           `;
         } else {
-          showSection('businessRegistration');
+          document.getElementById('businessRegistration').innerHTML = `
+            <div class="business-hub">
+              <a href="#" onclick="showSection('dashboard')">←</a>
+              <h2>Register Your Business</h2>
+            </div>
+            <form id="businessForm">
+              <input type="text" id="ownerName" placeholder="Owner Name" required><br>
+              <input type="text" id="ownerId" placeholder="ID/Passport Number" required><br>
+              <input type="tel" id="contactNumber" placeholder="Contact Number (e.g., +27xxxxxxxxx)" required><br>
+              <input type="text" id="residentialAddress" placeholder="Residential Address" required><br>
+              <input type="text" id="businessName" placeholder="Business Name" required><br>
+              <input type="tel" id="businessContactNumber" placeholder="Business Contact Number (e.g., +27xxxxxxxxx)" required><br>
+              <select id="businessType" required>
+                <option value="" disabled selected>Select Business Type</option>
+                <option value="Spaza/Tuck shop">Spaza/Tuck shop</option>
+                <option value="Supermarket">Supermarket</option>
+                <option value="Fast Food">Fast Food</option>
+                <option value="Street hawker/vendor">Street hawker/vendor</option>
+                <option value="Salon/Barber">Salon/Barber</option>
+                <option value="Car Wash">Car Wash</option>
+                <option value="Home Based Business">Home Based Business</option>
+                <option value="Informal transport">Informal transport</option>
+                <option value="Other">Other</option>
+              </select><br>
+              <input type="text" id="businessTypeOther" placeholder="Specify Business Type" class="conditional"><br>
+              <input type="text" id="businessAddress" placeholder="Business Address" required><br>
+              <input type="text" id="googleMapsUrl" placeholder="Location for Business (Google Maps URL, optional)"><br>
+              <input type="text" id="municipalityName" placeholder="Municipality Name" required><br>
+              <input type="number" id="operationYears" placeholder="Years in Operation" min="0" required><br>
+              <input type="number" id="operationMonths" placeholder="Months in Operation" min="0" max="11" required><br>
+              <select id="hasBusinessAccount" required>
+                <option value="" disabled selected>Do you have a business account?</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select><br>
+              <select id="bankName" class="conditional">
+                <option value="" disabled selected>Select Bank</option>
+                <option value="ABSA">ABSA</option>
+                <option value="Bidvest">Bidvest</option>
+                <option value="Capitec">Capitec</option>
+                <option value="FNB">FNB</option>
+                <option value="Nedbank">Nedbank</option>
+                <option value="Standard Bank">Standard Bank</option>
+                <option value="TymeBank">TymeBank</option>
+              </select><br>
+              <button type="submit">Register Business</button>
+            </form>
+          `;
+          document.getElementById('businessType').addEventListener('change', (e) => {
+            const otherField = document.getElementById('businessTypeOther');
+            otherField.classList.toggle('conditional', e.target.value !== 'Other');
+            otherField.required = e.target.value === 'Other';
+          });
+          document.getElementById('hasBusinessAccount').addEventListener('change', (e) => {
+            const bankField = document.getElementById('bankName');
+            bankField.classList.toggle('conditional', e.target.value !== 'Yes');
+            bankField.required = e.target.value === 'Yes';
+          });
+          document.getElementById('businessForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const ownerName = document.getElementById('ownerName').value;
+            const ownerId = document.getElementById('ownerId').value;
+            const contactNumber = document.getElementById('contactNumber').value;
+            const residentialAddress = document.getElementById('residentialAddress').value;
+            const businessName = document.getElementById('businessName').value;
+            const businessContactNumber = document.getElementById('businessContactNumber').value;
+            let businessType = document.getElementById('businessType').value;
+            const businessTypeOther = document.getElementById('businessTypeOther').value;
+            const businessAddress = document.getElementById('businessAddress').value;
+            const googleMapsUrl = document.getElementById('googleMapsUrl').value;
+            const municipalityName = document.getElementById('municipalityName').value;
+            const operationYears = parseInt(document.getElementById('operationYears').value);
+            const operationMonths = parseInt(document.getElementById('operationMonths').value);
+            const hasBusinessAccount = document.getElementById('hasBusinessAccount').value;
+            const bankName = document.getElementById('bankName').value;
+            const user = auth.currentUser;
+
+            if (businessType === 'Other' && !businessTypeOther) {
+              alert('Please specify the business type.');
+              return;
+            }
+            if (hasBusinessAccount === 'Yes' && !bankName) {
+              alert('Please select a bank.');
+              return;
+            }
+            if (!/^\+?\d{10,15}$/.test(contactNumber)) {
+              alert('Please enter a valid contact number (e.g., +27xxxxxxxxx).');
+              return;
+            }
+            if (!/^\+?\d{10,15}$/.test(businessContactNumber)) {
+              alert('Please enter a valid business contact number (e.g., +27xxxxxxxxx).');
+              return;
+            }
+
+            if (user) {
+              await db.collection('businesses').doc(user.uid).set({
+                ownerName,
+                ownerId,
+                contactNumber,
+                residentialAddress,
+                businessName,
+                businessContactNumber,
+                businessType: businessType === 'Other' ? businessTypeOther : businessType,
+                businessAddress,
+                googleMapsUrl,
+                municipalityName,
+                operationYears,
+                operationMonths,
+                hasBusinessAccount,
+                bankName: hasBusinessAccount === 'Yes' ? bankName : null,
+                userId: user.uid
+              });
+              alert('Business registered successfully!');
+              showSection('dashboard');
+            } else {
+              alert('Please sign in to register a business.');
+            }
+          });
         }
       }
     }
 
-    async function loadSalesAndExpenses() {
+    async function loadSales() {
       const user = auth.currentUser;
       if (user) {
         const salesSnapshot = await db.collection('sales').where('userId', '==', user.uid).get();
-        const expensesSnapshot = await db.collection('expenses').where('userId', '==', user.uid).get();
         const table = document.getElementById('salesTable');
         table.innerHTML = `
           <tr>
             <th>Date</th>
             <th>Amount</th>
-            <th>Cost/Category</th>
+            <th>Cost</th>
             <th>Type</th>
           </tr>
         `;
@@ -508,7 +608,7 @@
         });
         alert('Sale added successfully!');
         document.getElementById('salesForm').reset();
-        loadSalesAndExpenses();
+        loadSales();
       }
     });
 
