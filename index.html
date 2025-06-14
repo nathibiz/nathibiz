@@ -136,13 +136,13 @@
 
   <script>
     const firebaseConfig = {
-  apiKey: "AIzaSyBjop9idbdOohdUtDvztaPmlLk-w4Xiy3c",
-  authDomain: "nathibiz.firebaseapp.com",
-  projectId: "nathibiz",
-  storageBucket: "nathibiz.firebasestorage.app",
-  messagingSenderId: "585170233799",
-  appId: "1:585170233799:web:e79c3b9f334d23343b91e2"
-};
+      apiKey: "AIzaSyBjop9idbdOohdUtDvztaPmlLk-w4Xiy3c",
+      authDomain: "nathibiz.firebaseapp.com",
+      projectId: "nathibiz",
+      storageBucket: "nathibiz.firebasestorage.app",
+      messagingSenderId: "585170233799",
+      appId: "1:585170233799:web:e79c3b9f334d23343b91e2"
+    };
 
     try {
       firebase.initializeApp(firebaseConfig);
@@ -170,8 +170,8 @@
 
     auth.onAuthStateChanged(user => {
       console.log('Auth state changed:', user ? `User ${user?.uid}, Email: ${user?.email}` : 'No user');
-      document.getElementById('debug').innerText += `Auth state: ${user ? `Signed in as ${user.email}` : 'No user'}\n`;
-      if (user) {
+      document.getElementById('debug').innerText += `Auth state: ${user ? `Signed in as ${user.email}` : 'No user'}\n';
+      if (user && user.uid) {
         firebase.firestore().getDoc(firebase.firestore().doc(db, 'businesses', user.uid)).then(doc => {
           console.log('Business check result:', doc.exists());
           document.getElementById('debug').innerText += `Business check: ${doc.exists() ? 'Exists' : 'Not found'}\n`;
@@ -200,6 +200,18 @@
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
         console.log('Sign-in successful, UID:', userCredential.user.uid);
         document.getElementById('debug').innerText += `Sign-in successful, UID: ${userCredential.user.uid}\n`;
+        // Ensure state change is handled
+        auth.onAuthStateChanged(user => {
+          if (user) {
+            firebase.firestore().getDoc(firebase.firestore().doc(db, 'businesses', user.uid)).then(doc => {
+              showSection(doc.exists() ? 'dashboard' : 'businessRegistration');
+            }).catch(error => {
+              console.error('Error checking business:', error);
+              alert('Error checking business: ' + error.message);
+              showSection('businessRegistration');
+            });
+          }
+        });
       } catch (error) {
         console.error('Sign-in error:', error.code, error.message);
         document.getElementById('debug').innerText += `Sign-in error: ${error.message}\n`;
@@ -559,17 +571,17 @@
     }
 
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-          .then(registration => {
-            console.log('Service Worker registered with scope:', registration.scope);
-            document.getElementById('debug').innerText += `Service Worker registered: ${registration.scope}\n`;
-          })
-          .catch(error => {
-            console.error('Service Worker registration failed:', error);
-            document.getElementById('debug').innerText += `Service Worker error: ${error.message}\n`;
-          });
-      });
+      // window.addEventListener('load', () => {
+      //   navigator.serviceWorker.register('/sw.js')
+      //     .then(registration => {
+      //       console.log('Service Worker registered with scope:', registration.scope);
+      //       document.getElementById('debug').innerText += `Service Worker registered: ${registration.scope}\n`;
+      //     })
+      //     .catch(error => {
+      //       console.error('Service Worker registration failed:', error);
+      //       document.getElementById('debug').innerText += `Service Worker error: ${error.message}\n`;
+      //     });
+      // });
     }
   </script>
 </body>
