@@ -182,6 +182,8 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
+    let isProcessing = false; // Debounce flag
+
     function showSection(sectionId) {
       console.log('Showing section:', sectionId);
       document.querySelectorAll('section').forEach(section => section.classList.add('hidden'));
@@ -199,9 +201,11 @@
     }
 
     auth.onAuthStateChanged(user => {
-      console.log('Auth state:', user ? `User ${user.uid}, Phone: ${user.phoneNumber}, Email: ${user.email}` : 'No user');
+      console.log('Auth state changed:', user ? `User ${user.uid}, Email: ${user.email}, Phone: ${user.phoneNumber}` : 'No user');
+      document.getElementById('debugInfo').innerText += `\nAuth state: ${user ? 'Signed in as ' + (user.email || user.phoneNumber) : 'No user'}`;
       if (user) {
         firebase.firestore().getDoc(firebase.firestore().doc(db, 'businesses', user.uid)).then(doc => {
+          console.log('Business check result:', doc.exists());
           if (doc.exists()) {
             showSection('dashboard');
           } else {
@@ -263,37 +267,28 @@
     if (signInForm) {
       signInForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        if (isProcessing) return;
+        isProcessing = true;
         console.log('Sign In form submitted');
         debugInfo.innerText += '\nForm submitted';
         alert('Sign In form submitted');
         await handleSignIn();
+        isProcessing = false;
       });
     }
 
     if (signInButton) {
       signInButton.addEventListener('click', async (e) => {
         e.preventDefault();
+        if (isProcessing) return;
+        isProcessing = true;
         console.log('Sign In button clicked');
         debugInfo.innerText += '\nButton clicked';
         alert('Sign In button clicked');
         await handleSignIn();
+        isProcessing = false;
       });
     }
-
-    // Retry binding after 1s
-    setTimeout(() => {
-      console.log('Retrying event binding');
-      if (signInButton && !signInButton.hasAttribute('data-bound')) {
-        signInButton.addEventListener('click', async (e) => {
-          e.preventDefault();
-          console.log('Sign In button retry clicked');
-          debugInfo.innerText += '\nButton retry clicked';
-          alert('Sign In button retry clicked');
-          await handleSignIn();
-        });
-        signInButton.setAttribute('data-bound', 'true');
-      }
-    }, 1000);
 
     async function handleSignIn() {
       const method = document.getElementById('signInMethod').value;
@@ -331,10 +326,19 @@
           console.log('Calling signInWithEmailAndPassword');
           debugInfo.innerText += '\nCalling Firebase email auth';
           alert('Attempting email sign-in');
-          await auth.signInWithEmailAndPassword(email, password);
-          console.log('Email sign-in successful');
-          debugInfo.innerText += '\nEmail sign-in successful';
-          alert('Signed in successfully');
+          const userCredential = await auth.signInWithEmailAndPassword(email, password);
+          console.log('Email sign-in successful, UID:', userCredential.user.uid);
+          debugInfo.innerText += '\nEmail sign-in successful, UID: ' + userCredential.user.uid;
+          alert('Signed in successfully, waiting for UI update');
+          // Wait for auth state to propagate
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          const user = auth.currentUser;
+          if (user) {
+            console.log('Verified user:', user.uid);
+            debugInfo.innerText += '\nVerified user: ' + user.uid;
+          } else {
+            throw new Error('Authentication state not updated');
+          }
         } else {
           const phoneInput = document.getElementById('signInPhone');
           if (!phoneInput) {
