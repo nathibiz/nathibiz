@@ -146,12 +146,12 @@
 
     try {
       firebase.initializeApp(firebaseConfig);
-      console.log('Firebase initialized successfully, version:', firebase.SDK_VERSION);
-      document.getElementById('debug').innerText += `Firebase v${firebase.SDK_VERSION} initialized\n`;
+      console.log('Firebase initialized, version:', firebase.SDK_VERSION);
+      document.getElementById('debug').innerText = `Firebase v${firebase.SDK_VERSION} initialized\n`;
     } catch (error) {
-      console.error('Firebase initialization failed:', error);
-      document.getElementById('debug').innerText += `Firebase init error: ${error.message}\n`;
-      alert('Firebase initialization failed: ' + error.message);
+      console.error('Firebase init failed:', error);
+      document.getElementById('debug').innerText = `Init error: ${error.message}\n`;
+      alert('Firebase init failed: ' + error.message);
     }
 
     const auth = firebase.auth();
