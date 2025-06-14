@@ -21,6 +21,7 @@
     table { width: 100%; border-collapse: collapse; margin-top: 10px; }
     th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; }
     th { background-color: #f9fafb; }
+    .conditional { display: none; }
   </style>
 </head>
 <body>
@@ -28,8 +29,14 @@
     <section id="auth" class="hidden">
       <h2>Sign In</h2>
       <form id="signInForm">
-        <input type="email" id="signInEmail" placeholder="Email" required><br>
-        <input type="password" id="signInPassword" placeholder="Password" required><br>
+        <select id="signInMethod">
+          <option value="email">Email</option>
+          <option value="phone">Phone Number</option>
+        </select><br>
+        <input type="email" id="signInEmail" placeholder="Email" class="email-input"><br>
+        <input type="tel" id="signInPhone" placeholder="Phone Number (e.g., +27xxxxxxxxx)" class="phone-input hidden"><br>
+        <input type="password" id="signInPassword" placeholder="Password" class="email-input"><br>
+        <div id="recaptcha-container" class="phone-input hidden"></div>
         <button type="submit">Sign In</button>
       </form>
       <p>Don't have an account? <a href="#" id="showRegister">Register</a></p>
@@ -38,8 +45,14 @@
     <section id="register" class="hidden">
       <h2>Register</h2>
       <form id="registerForm">
-        <input type="email" id="registerEmail" placeholder="Email" required><br>
-        <input type="password" id="registerPassword" placeholder="Password" required><br>
+        <select id="registerMethod">
+          <option value="email">Email</option>
+          <option value="phone">Phone Number</option>
+        </select><br>
+        <input type="email" id="registerEmail" placeholder="Email" class="email-input"><br>
+        <input type="tel" id="registerPhone" placeholder="Phone Number (e.g., +27xxxxxxxxx)" class="phone-input hidden"><br>
+        <input type="password" id="registerPassword" placeholder="Password" class="email-input"><br>
+        <div id="recaptcha-container-register" class="phone-input hidden"></div>
         <button type="submit">Register</button>
       </form>
       <p>Already have an account? <a href="#" id="showSignIn">Sign In</a></p>
@@ -48,12 +61,44 @@
     <section id="businessRegistration" class="hidden">
       <h2>Register Your Business</h2>
       <form id="businessForm">
+        <input type="text" id="businessName" placeholder="Business Name" required><br>
+        <select id="businessType" required>
+          <option value="" disabled selected>Select Business Type</option>
+          <option value="Spaza/Tuck shop">Spaza/Tuck shop</option>
+          <option value="Supermarket">Supermarket</option>
+          <option value="Fast Food">Fast Food</option>
+          <option value="Street hawker/vendor">Street hawker/vendor</option>
+          <option value="Salon/Barber">Salon/Barber</option>
+          <option value="Car Wash">Car Wash</option>
+          <option value="Home Based Business">Home Based Business</option>
+          <option value="Informal transport">Informal transport</option>
+          <option value="Other">Other</option>
+        </select><br>
+        <input type="text" id="businessTypeOther" placeholder="Specify Business Type" class="conditional"><br>
         <input type="text" id="ownerName" placeholder="Owner Name" required><br>
-        <input type="text" id="ownerId" placeholder="Owner ID Number" required><br>
+        <input type="text" id="ownerId" placeholder="ID/Passport Number" required><br>
+        <input type="tel" id="contactNumber" placeholder="Contact Number (e.g., +27xxxxxxxxx)" required><br>
         <input type="text" id="physicalAddress" placeholder="Physical Address" required><br>
         <input type="text" id="postalAddress" placeholder="Postal Address" required><br>
         <input type="text" id="googleMapsUrl" placeholder="Google Maps URL (e.g., https://www.google.com/maps/place/...)"><br>
         <button type="button" onclick="getCurrentLocation()">Send Your Location</button><br>
+        <input type="number" id="operationYears" placeholder="Years in Operation" min="0" required><br>
+        <input type="number" id="operationMonths" placeholder="Months in Operation" min="0" max="11" required><br>
+        <select id="hasBusinessAccount" required>
+          <option value="" disabled selected>Do you have a business account?</option>
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select><br>
+        <select id="bankName" class="conditional">
+          <option value="" disabled selected>Select Bank</option>
+          <option value="ABSA">ABSA</option>
+          <option value="Bidvest">Bidvest</option>
+          <option value="Capitec">Capitec</option>
+          <option value="FNB">FNB</option>
+          <option value="Nedbank">Nedbank</option>
+          <option value="Standard Bank">Standard Bank</option>
+          <option value="TymeBank">TymeBank</option>
+        </select><br>
         <button type="submit">Register Business</button>
       </form>
     </section>
@@ -123,7 +168,13 @@
 
     auth.onAuthStateChanged(user => {
       if (user) {
-        showSection('dashboard');
+        firebase.firestore().getDoc(firebase.firestore().doc(db, 'businesses', user.uid)).then(doc => {
+          if (doc.exists()) {
+            showSection('dashboard');
+          } else {
+            showSection('businessRegistration');
+          }
+        });
       } else {
         showSection('auth');
       }
@@ -132,26 +183,75 @@
     document.getElementById('showRegister').addEventListener('click', () => showSection('register'));
     document.getElementById('showSignIn').addEventListener('click', () => showSection('auth'));
 
+    // Toggle auth method
+    function toggleAuthInputs(method, formType) {
+      const emailInputs = document.querySelectorAll(`#${formType}Form .email-input`);
+      const phoneInputs = document.querySelectorAll(`#${formType}Form .phone-input`);
+      emailInputs.forEach(input => input.classList.toggle('hidden', method !== 'email'));
+      phoneInputs.forEach(input => input.classList.toggle('hidden', method !== 'phone'));
+      if (method === 'phone' && formType === 'signIn') {
+        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+          'size': 'normal',
+          'callback': () => {}
+        });
+      } else if (method === 'phone' && formType === 'register') {
+        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container-register', {
+          'size': 'normal',
+          'callback': () => {}
+        });
+      }
+    }
+
+    document.getElementById('signInMethod').addEventListener('change', (e) => toggleAuthInputs(e.target.value, 'signIn'));
+    document.getElementById('registerMethod').addEventListener('change', (e) => toggleAuthInputs(e.target.value, 'register'));
+
     document.getElementById('signInForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const email = document.getElementById('signInEmail').value;
-      const password = document.getElementById('signInPassword').value;
-      try {
-        await auth.signInWithEmailAndPassword(email, password);
-      } catch (error) {
-        alert('Error signing in: ' + error.message);
+      const method = document.getElementById('signInMethod').value;
+      if (method === 'email') {
+        const email = document.getElementById('signInEmail').value;
+        const password = document.getElementById('signInPassword').value;
+        try {
+          await auth.signInWithEmailAndPassword(email, password);
+        } catch (error) {
+          alert('Error signing in: ' + error.message);
+        }
+      } else {
+        const phone = document.getElementById('signInPhone').value;
+        try {
+          const confirmationResult = await auth.signInWithPhoneNumber(phone, window.recaptchaVerifier);
+          const code = prompt('Enter the verification code sent to your phone:');
+          if (code) {
+            await confirmationResult.confirm(code);
+          }
+        } catch (error) {
+          alert('Error signing in with phone: ' + error.message);
+        }
       }
     });
 
     document.getElementById('registerForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const email = document.getElementById('registerEmail').value;
-      const password = document.getElementById('registerPassword').value;
-      try {
-        await auth.createUserWithEmailAndPassword(email, password);
-        showSection('businessRegistration');
-      } catch (error) {
-        alert('Error registering: ' + error.message);
+      const method = document.getElementById('registerMethod').value;
+      if (method === 'email') {
+        const email = document.getElementById('registerEmail').value;
+        const password = document.getElementById('registerPassword').value;
+        try {
+          await auth.createUserWithEmailAndPassword(email, password);
+        } catch (error) {
+          alert('Error registering: ' + error.message);
+        }
+      } else {
+        const phone = document.getElementById('registerPhone').value;
+        try {
+          const confirmationResult = await auth.signInWithPhoneNumber(phone, window.recaptchaVerifier);
+          const code = prompt('Enter the verification code sent to your phone:');
+          if (code) {
+            await confirmationResult.confirm(code);
+          }
+        } catch (error) {
+          alert('Error registering with phone: ' + error.message);
+        }
       }
     });
 
@@ -159,32 +259,33 @@
       auth.signOut();
     }
 
-    // Validate and convert Google Maps URL to embeddable format
+    // Simplified Google Maps handling
     function getEmbedUrl(googleMapsUrl) {
       if (!googleMapsUrl) return '';
-      // Handle place or search URLs
-      const placeMatch = googleMapsUrl.match(/place\/([^/]+)\/@([-.\d]+),([-.\d]+)/);
-      if (placeMatch) {
-        const place = encodeURIComponent(placeMatch[1]);
-        const lat = placeMatch[2];
-        const lng = placeMatch[3];
-        return `https://www.google.com/maps/embed/v1/place?q=${place}&center=${lat},${lng}&zoom=15`;
+      try {
+        // Try to use URL directly as embed if it contains 'embed'
+        if (googleMapsUrl.includes('embed')) {
+          return googleMapsUrl;
+        }
+        // Extract coordinates or place
+        const coordMatch = googleMapsUrl.match(/@([-.\d]+),([-.\d]+)/) || googleMapsUrl.match(/q=([-.\d]+),([-.\d]+)/);
+        if (coordMatch) {
+          const lat = coordMatch[1];
+          const lng = coordMatch[2];
+          return `https://www.google.com/maps/embed/v1/place?q=${lat},${lng}&zoom=15`;
+        }
+        // Fallback to attempt place-based embed
+        const placeMatch = googleMapsUrl.match(/place\/([^/]+)/);
+        if (placeMatch) {
+          const place = encodeURIComponent(placeMatch[1]);
+          return `https://www.google.com/maps/embed/v1/place?q=${place}&zoom=15`;
+        }
+      } catch (error) {
+        console.error('Error parsing Google Maps URL:', error);
       }
-      // Handle coordinate-based URLs
-      const coordMatch = googleMapsUrl.match(/q=([-.\d]+),([-.\d]+)/);
-      if (coordMatch) {
-        const lat = coordMatch[1];
-        const lng = coordMatch[2];
-        return `https://www.google.com/maps/embed/v1/place?q=${lat},${lng}&center=${lat},${lng}&zoom=15`;
-      }
-      // Handle direct embed URLs
-      if (googleMapsUrl.includes('embed')) {
-        return googleMapsUrl;
-      }
-      return ''; // Invalid URL
+      return ''; // Invalid or unsupported URL
     }
 
-    // Get current location and generate Google Maps URL
     function getCurrentLocation() {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
@@ -196,6 +297,7 @@
             alert('Location set in Google Maps URL field.');
           },
           (error) => {
+            console.error('Geolocation error:', error);
             alert('Error getting location: ' + error.message + '. Please paste a Google Maps URL manually.');
           }
         );
@@ -204,31 +306,69 @@
       }
     }
 
-    // Business form submission
+    // Business form logic
+    document.getElementById('businessType').addEventListener('change', (e) => {
+      const otherField = document.getElementById('businessTypeOther');
+      otherField.classList.toggle('conditional', e.target.value !== 'Other');
+      otherField.required = e.target.value === 'Other';
+    });
+
+    document.getElementById('hasBusinessAccount').addEventListener('change', (e) => {
+      const bankField = document.getElementById('bankName');
+      bankField.classList.toggle('conditional', e.target.value !== 'Yes');
+      bankField.required = e.target.value === 'Yes';
+    });
+
     document.getElementById('businessForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      const businessName = document.getElementById('businessName').value;
+      let businessType = document.getElementById('businessType').value;
+      const businessTypeOther = document.getElementById('businessTypeOther').value;
       const ownerName = document.getElementById('ownerName').value;
       const ownerId = document.getElementById('ownerId').value;
+      const contactNumber = document.getElementById('contactNumber').value;
       const physicalAddress = document.getElementById('physicalAddress').value;
       const postalAddress = document.getElementById('postalAddress').value;
       let googleMapsUrl = document.getElementById('googleMapsUrl').value;
+      const operationYears = parseInt(document.getElementById('operationYears').value);
+      const operationMonths = parseInt(document.getElementById('operationMonths').value);
+      const hasBusinessAccount = document.getElementById('hasBusinessAccount').value;
+      const bankName = document.getElementById('bankName').value;
       const user = auth.currentUser;
 
-      // Validate Google Maps URL
+      if (businessType === 'Other' && !businessTypeOther) {
+        alert('Please specify the business type.');
+        return;
+      }
+      if (hasBusinessAccount === 'Yes' && !bankName) {
+        alert('Please select a bank.');
+        return;
+      }
+      if (!/^\+?\d{10,15}$/.test(contactNumber)) {
+        alert('Please enter a valid contact number (e.g., +27xxxxxxxxx).');
+        return;
+      }
+
       const embedUrl = getEmbedUrl(googleMapsUrl);
       if (googleMapsUrl && !embedUrl) {
-        alert('Invalid Google Maps URL. Please use a place URL (e.g., https://www.google.com/maps/place/...) or coordinates (e.g., https://www.google.com/maps?q=-33.9249,18.4241).');
-        return;
+        console.warn('Invalid Google Maps URL:', googleMapsUrl);
       }
 
       if (user) {
         await firebase.firestore().setDoc(firebase.firestore().doc(db, 'businesses', user.uid), {
+          businessName,
+          businessType: businessType === 'Other' ? businessTypeOther : businessType,
           ownerName,
           ownerId,
+          contactNumber,
           physicalAddress,
           postalAddress,
           googleMapsUrl,
           embedUrl,
+          operationYears,
+          operationMonths,
+          hasBusinessAccount,
+          bankName: hasBusinessAccount === 'Yes' ? bankName : null,
           userId: user.uid
         });
         alert('Business registered successfully!');
@@ -245,18 +385,25 @@
         if (businessDoc.exists()) {
           const data = businessDoc.data();
           document.getElementById('businessDetails').innerHTML = `
+            <p><strong>Business Name:</strong> ${data.businessName}</p>
+            <p><strong>Business Type:</strong> ${data.businessType}</p>
             <p><strong>Owner:</strong> ${data.ownerName}</p>
-            <p><strong>ID:</strong> ${data.ownerId}</p>
+            <p><strong>ID/Passport:</strong> ${data.ownerId}</p>
+            <p><strong>Contact Number:</strong> ${data.contactNumber}</p>
             <p><strong>Physical Address:</strong> ${data.physicalAddress}</p>
             <p><strong>Postal Address:</strong> ${data.postalAddress}</p>
             <p><strong>Location:</strong> <a href="${data.googleMapsUrl}" target="_blank">${data.googleMapsUrl || 'Not set'}</a></p>
+            <p><strong>Operation Time:</strong> ${data.operationYears} years, ${data.operationMonths} months</p>
+            <p><strong>Business Account:</strong> ${data.hasBusinessAccount}${data.bankName ? ' (' + data.bankName + ')' : ''}</p>
           `;
           const mapIframe = document.getElementById('mapIframe');
           if (data.embedUrl) {
             mapIframe.src = data.embedUrl;
             mapIframe.style.display = 'block';
+            console.log('Map iframe set to:', data.embedUrl);
           } else {
             mapIframe.style.display = 'none';
+            console.log('No valid map URL; iframe hidden');
           }
         } else {
           showSection('businessRegistration');
