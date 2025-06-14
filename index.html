@@ -3,13 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>Business & Financial Tracker</title>
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" type="image/png" href="/icon-192x192.png">
   <link rel="apple-touch-icon" href="/icon-512x512.png">
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js?cachebust=20250614"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js?cachebust=20250614"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js?cachebust=20250614"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
   <style>
     body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f3f4f6; }
     .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
@@ -22,12 +25,14 @@
     th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; }
     th { background-color: #f9fafb; }
     .conditional { display: none; }
+    #debugInfo { color: #666; font-size: 12px; margin-top: 10px; }
   </style>
 </head>
 <body>
   <div class="container">
-    <section id="auth" class="hidden">
+    <section id="auth">
       <h2>Sign In</h2>
+      <div id="debugInfo"></div>
       <form id="signInForm">
         <select id="signInMethod">
           <option value="email">Email</option>
@@ -146,11 +151,14 @@
 
   <script>
     // Global error handler
-    window.onerror = function (msg, url, line, col, error) {
+    window.onerror = function(msg, url, line, col, error) {
       console.error('Global error:', msg, 'at', url, line + ':' + col, error);
-      alert('An unexpected error occurred: ' + msg);
+      alert('Unexpected error: ' + msg);
       return false;
     };
+
+    console.log('Script loaded at:', new Date().toISOString());
+    document.getElementById('debugInfo').innerText = `Script loaded at ${new Date().toLocaleString()}`;
 
     const firebaseConfig = {
       apiKey: "AIzaSyBjop9idbdOohdUtDvztaPmlLk-w4Xiy3c",
@@ -164,10 +172,11 @@
     try {
       console.log('Initializing Firebase');
       firebase.initializeApp(firebaseConfig);
-      console.log('Firebase initialized successfully');
+      console.log('Firebase initialized, version:', firebase.SDK_VERSION);
+      document.getElementById('debugInfo').innerText += `\nFirebase v${firebase.SDK_VERSION} initialized`;
     } catch (error) {
-      console.error('Firebase initialization error:', error);
-      alert('Error initializing app: ' + error.message);
+      console.error('Firebase init error:', error);
+      alert('Firebase initialization failed: ' + error.message);
     }
 
     const auth = firebase.auth();
@@ -185,11 +194,12 @@
         }
       } else {
         console.error('Section not found:', sectionId);
+        alert('Error: Section ' + sectionId + ' not found');
       }
     }
 
     auth.onAuthStateChanged(user => {
-      console.log('Auth state changed:', user ? `User ${user.uid}, Phone: ${user.phoneNumber}` : 'No user');
+      console.log('Auth state:', user ? `User ${user.uid}, Phone: ${user.phoneNumber}, Email: ${user.email}` : 'No user');
       if (user) {
         firebase.firestore().getDoc(firebase.firestore().doc(db, 'businesses', user.uid)).then(doc => {
           if (doc.exists()) {
@@ -206,428 +216,485 @@
       }
     });
 
-    document.addEventListener('DOMContentLoaded', () => {
-      console.log('DOM fully loaded');
+    console.log('Setting up event listeners');
+    const signInForm = document.getElementById('signInForm');
+    const signInButton = document.getElementById('signInButton');
+    const debugInfo = document.getElementById('debugInfo');
 
-      const showRegisterLink = document.getElementById('showRegister');
-      const showSignInLink = document.getElementById('showSignIn');
-      const resetPasswordLink = document.getElementById('resetPassword');
-      if (showRegisterLink) {
-        showRegisterLink.addEventListener('click', () => showSection('register'));
-      } else {
-        console.error('showRegister link not found');
-      }
-      if (showSignInLink) {
-        showSignInLink.addEventListener('click', () => showSection('auth'));
-      } else {
-        console.error('showSignIn link not found');
-      }
-      if (resetPasswordLink) {
-        resetPasswordLink.addEventListener('click', () => {
-          console.log('Reset Password clicked');
-          const method = document.getElementById('signInMethod').value;
-          if (method === 'email') {
-            const email = document.getElementById('signInEmail').value.trim();
-            if (!email) {
-              alert('Please enter your email to reset password.');
-              return;
-            }
-            auth.sendPasswordResetEmail(email).then(() => {
-              console.log('Password reset email sent to:', email);
-              alert('Password reset email sent. Check your inbox.');
-            }).catch(error => {
-              console.error('Password reset error:', error);
-              alert('Error sending password reset: ' + error.message);
-            });
-          } else {
-            alert('Password reset for phone number is not supported. Please register again or contact support.');
-          }
-        });
-      }
+    if (!signInForm) {
+      console.error('signInForm not found');
+      alert('Critical error: Sign In form not found');
+    } else {
+      console.log('signInForm found');
+      debugInfo.innerText += '\nSign In form detected';
+    }
 
-      function toggleAuthInputs(method, formType) {
-        console.log(`Toggling ${formType} inputs for method:`, method);
-        const emailInputs = document.querySelectorAll(`#${formType}Form .email-input`);
-        const phoneInputs = document.querySelectorAll(`#${formType}Form .phone-input`);
-        emailInputs.forEach(input => input.classList.toggle('hidden', method !== 'email'));
-        phoneInputs.forEach(input => input.classList.toggle('hidden', method !== 'phone'));
-      }
+    if (!signInButton) {
+      console.error('signInButton not found');
+      alert('Critical error: Sign In button not found');
+    } else {
+      console.log('signInButton found');
+      debugInfo.innerText += '\nSign In button detected';
+    }
 
-      const signInMethodSelect = document.getElementById('signInMethod');
-      const registerMethodSelect = document.getElementById('registerMethod');
-      if (signInMethodSelect) {
-        signInMethodSelect.addEventListener('change', (e) => toggleAuthInputs(e.target.value, 'signIn'));
-      } else {
-        console.error('signInMethod select not found');
-      }
-      if (registerMethodSelect) {
-        registerMethodSelect.addEventListener('change', (e) => toggleAuthInputs(e.target.value, 'register'));
-      } else {
-        console.error('registerMethod select not found');
-      }
+    function toggleAuthInputs(method, formType) {
+      console.log(`Toggling ${formType} inputs for method:`, method);
+      const emailInputs = document.querySelectorAll(`#${formType}Form .email-input`);
+      const phoneInputs = document.querySelectorAll(`#${formType}Form .phone-input`);
+      emailInputs.forEach(input => input.classList.toggle('hidden', method !== 'email'));
+      phoneInputs.forEach(input => input.classList.toggle('hidden', method !== 'phone'));
+    }
 
-      const signInForm = document.getElementById('signInForm');
-      const signInButton = document.getElementById('signInButton');
-      if (signInForm) {
-        signInForm.addEventListener('submit', async (e) => {
-          e.preventDefault();
-          console.log('Sign In form submitted');
-          await handleSignIn();
-        });
-      } else {
-        console.error('signInForm not found');
-      }
-      if (signInButton) {
+    const signInMethodSelect = document.getElementById('signInMethod');
+    const registerMethodSelect = document.getElementById('registerMethod');
+    if (signInMethodSelect) {
+      signInMethodSelect.addEventListener('change', (e) => {
+        console.log('Sign-in method changed:', e.target.value);
+        toggleAuthInputs(e.target.value, 'signIn');
+      });
+    }
+    if (registerMethodSelect) {
+      registerMethodSelect.addEventListener('change', (e) => {
+        console.log('Register method changed:', e.target.value);
+        toggleAuthInputs(e.target.value, 'register');
+      });
+    }
+
+    if (signInForm) {
+      signInForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        console.log('Sign In form submitted');
+        debugInfo.innerText += '\nForm submitted';
+        alert('Sign In form submitted');
+        await handleSignIn();
+      });
+    }
+
+    if (signInButton) {
+      signInButton.addEventListener('click', async (e) => {
+        e.preventDefault();
+        console.log('Sign In button clicked');
+        debugInfo.innerText += '\nButton clicked';
+        alert('Sign In button clicked');
+        await handleSignIn();
+      });
+    }
+
+    // Retry binding after 1s
+    setTimeout(() => {
+      console.log('Retrying event binding');
+      if (signInButton && !signInButton.hasAttribute('data-bound')) {
         signInButton.addEventListener('click', async (e) => {
           e.preventDefault();
-          console.log('Sign In button clicked');
+          console.log('Sign In button retry clicked');
+          debugInfo.innerText += '\nButton retry clicked';
+          alert('Sign In button retry clicked');
           await handleSignIn();
         });
-      } else {
-        console.error('signInButton not found');
+        signInButton.setAttribute('data-bound', 'true');
       }
+    }, 1000);
 
-      async function handleSignIn() {
-        const method = document.getElementById('signInMethod').value;
-        const password = document.getElementById('signInPassword').value.trim();
+    async function handleSignIn() {
+      const method = document.getElementById('signInMethod').value;
+      console.log('Handling sign-in for method:', method);
+      debugInfo.innerText += `\nAttempting ${method} sign-in`;
 
-        if (!password && method === 'email') {
-          console.warn('Password is empty');
-          alert('Please enter a password.');
-          return;
+      try {
+        if (method === 'email') {
+          const emailInput = document.getElementById('signInEmail');
+          const passwordInput = document.getElementById('signInPassword');
+          if (!emailInput || !passwordInput) {
+            console.error('Email or password input missing');
+            alert('Error: Email or password input not found');
+            return;
+          }
+          const email = emailInput.value.trim();
+          const password = passwordInput.value.trim();
+          console.log('Email:', email, 'Password length:', password.length);
+          debugInfo.innerText += `\nEmail: ${email}`;
+          if (!email) {
+            console.warn('Email empty');
+            alert('Please enter an email');
+            return;
+          }
+          if (!password) {
+            console.warn('Password empty');
+            alert('Please enter a password');
+            return;
+          }
+          if (!/\S+@\S+\.\S+/.test(email)) {
+            console.warn('Invalid email:', email);
+            alert('Please enter a valid email');
+            return;
+          }
+          console.log('Calling signInWithEmailAndPassword');
+          debugInfo.innerText += '\nCalling Firebase email auth';
+          alert('Attempting email sign-in');
+          await auth.signInWithEmailAndPassword(email, password);
+          console.log('Email sign-in successful');
+          debugInfo.innerText += '\nEmail sign-in successful';
+          alert('Signed in successfully');
+        } else {
+          const phoneInput = document.getElementById('signInPhone');
+          if (!phoneInput) {
+            console.error('Phone input missing');
+            alert('Error: Phone input not found');
+            return;
+          }
+          let phone = phoneInput.value.trim().replace(/[\s\-\(\)]/g, '');
+          console.log('Phone:', phone);
+          debugInfo.innerText += `\nPhone: ${phone}`;
+          if (!phone) {
+            console.warn('Phone empty');
+            alert('Please enter a phone number');
+            return;
+          }
+          if (!/^\+\d{10,15}$/.test(phone)) {
+            console.warn('Invalid phone:', phone);
+            alert('Please enter a valid phone number (e.g., +27xxxxxxxxx)');
+            return;
+          }
+          console.log('Checking phone registration');
+          const phoneDoc = await firebase.firestore().getDoc(firebase.firestore().doc(db, 'phoneMappings', phone));
+          if (!phoneDoc.exists()) {
+            console.warn('Phone not registered:', phone);
+            alert('Phone number not registered. Please register first.');
+            return;
+          }
+          console.log('Sending SMS for sign-in');
+          debugInfo.innerText += '\nSending SMS';
+          alert('Sending SMS code');
+          const confirmationResult = await auth.signInWithPhoneNumber(phone);
+          const code = prompt('Enter the SMS code sent to your phone:');
+          if (code) {
+            console.log('Verifying SMS code:', code);
+            debugInfo.innerText += '\nVerifying SMS code';
+            alert('Verifying SMS code');
+            await confirmationResult.confirm(code);
+            console.log('Phone sign-in successful');
+            debugInfo.innerText += '\nPhone sign-in successful';
+            alert('Signed in successfully');
+          } else {
+            console.warn('No SMS code provided');
+            alert('SMS code required');
+            return;
+          }
         }
+      } catch (error) {
+        console.error('Sign-in error:', error.code, error.message, error.stack);
+        debugInfo.innerText += `\nError: ${error.message}`;
+        alert('Sign-in failed: ' + error.message);
+      }
+    }
+
+    const showRegisterLink = document.getElementById('showRegister');
+    const showSignInLink = document.getElementById('showSignIn');
+    const resetPasswordLink = document.getElementById('resetPassword');
+    if (showRegisterLink) {
+      showRegisterLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        console.log('Show Register clicked');
+        showSection('register');
+      });
+    }
+    if (showSignInLink) {
+      showSignInLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        console.log('Show Sign In clicked');
+        showSection('auth');
+      });
+    }
+    if (resetPasswordLink) {
+      resetPasswordLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        console.log('Reset Password clicked');
+        const method = document.getElementById('signInMethod').value;
+        if (method === 'email') {
+          const email = document.getElementById('signInEmail').value.trim();
+          if (!email) {
+            alert('Please enter your email to reset password');
+            return;
+          }
+          auth.sendPasswordResetEmail(email).then(() => {
+            console.log('Password reset email sent:', email);
+            alert('Password reset email sent. Check your inbox.');
+          }).catch(error => {
+            console.error('Password reset error:', error);
+            alert('Password reset failed: ' + error.message);
+          });
+        } else {
+          alert('Password reset for phone not supported. Please re-register or contact support.');
+        }
+      });
+    }
+
+    const registerForm = document.getElementById('registerForm');
+    if (registerForm) {
+      registerForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        console.log('Register form submitted');
+        const method = document.getElementById('registerMethod').value;
+        const password = document.getElementById('registerPassword').value.trim();
 
         try {
           if (method === 'email') {
-            const emailInput = document.getElementById('signInEmail');
+            const emailInput = document.getElementById('registerEmail');
             if (!emailInput) {
-              console.error('Email input not found');
-              alert('Internal error: Email input not found.');
+              console.error('Email input missing');
+              alert('Error: Email input not found');
               return;
             }
             const email = emailInput.value.trim();
-            console.log('Email input value:', email);
+            console.log('Email:', email);
             if (!email) {
-              console.warn('Email is empty');
-              alert('Please enter an email.');
+              console.warn('Email empty');
+              alert('Please enter an email');
+              return;
+            }
+            if (!password) {
+              console.warn('Password empty');
+              alert('Please enter a password');
               return;
             }
             if (!/\S+@\S+\.\S+/.test(email)) {
-              console.warn('Invalid email format:', email);
-              alert('Please enter a valid email.');
+              console.warn('Invalid email:', email);
+              alert('Please enter a valid email');
               return;
             }
-            console.log('Attempting email sign-in:', email);
-            await auth.signInWithEmailAndPassword(email, password);
-            console.log('Signed in with email:', email);
+            console.log('Calling createUserWithEmailAndPassword');
+            await auth.createUserWithEmailAndPassword(email, password);
+            console.log('Email registration successful');
+            alert('Registered successfully');
           } else {
-            const phoneInput = document.getElementById('signInPhone');
+            const phoneInput = document.getElementById('registerPhone');
             if (!phoneInput) {
-              console.error('Phone input not found');
-              alert('Internal error: Phone input not found.');
+              console.error('Phone input missing');
+              alert('Error: Phone input not found');
               return;
             }
-            let phone = phoneInput.value.trim();
-            console.log('Raw phone input:', phone);
-            phone = phone.replace(/[\s\-\(\)]/g, '');
+            let phone = phoneInput.value.trim().replace(/[\s\-\(\)]/g, '');
+            console.log('Phone:', phone);
             if (!phone) {
-              console.warn('Phone number is empty');
-              alert('Please enter a phone number.');
+              console.warn('Phone empty');
+              alert('Please enter a phone number');
               return;
             }
             if (!/^\+\d{10,15}$/.test(phone)) {
-              console.warn('Invalid phone format:', phone);
-              alert('Please enter a valid phone number starting with + (e.g., +27xxxxxxxxx).');
+              console.warn('Invalid phone:', phone);
+              alert('Please enter a valid phone number (e.g., +27xxxxxxxxx)');
               return;
             }
-            console.log('Processed phone number:', phone);
-            console.log('Attempting phone sign-in:', phone);
+            console.log('Checking phone registration');
+            const phoneDoc = await firebase.firestore().getDoc(firebase.firestore().doc(db, 'phoneMappings', phone));
+            if (phoneDoc.exists()) {
+              console.warn('Phone already registered:', phone);
+              alert('Phone number already registered. Please sign in.');
+              return;
+            }
+            console.log('Sending SMS for registration');
+            alert('Sending SMS code');
             const confirmationResult = await auth.signInWithPhoneNumber(phone);
-            const code = prompt('Enter the verification code sent to your phone:');
+            const code = prompt('Enter the SMS code sent to your phone:');
             if (code) {
-              console.log('Verifying SMS code for sign-in');
-              await confirmationResult.confirm(code);
-              console.log('Signed in with phone:', phone);
+              console.log('Verifying SMS code:', code);
+              alert('Verifying SMS code');
+              const userCredential = await confirmationResult.confirm(code);
+              const user = userCredential.user;
+              console.log('Phone registration successful, UID:', user.uid);
+              await firebase.firestore().setDoc(firebase.firestore().doc(db, 'phoneMappings', phone), {
+                phone: phone,
+                userId: user.uid
+              });
+              alert('Registered successfully');
             } else {
-              console.warn('No verification code provided');
-              alert('Verification code required.');
+              console.warn('No SMS code provided');
+              alert('SMS code required');
               return;
             }
           }
         } catch (error) {
-          console.error('Sign-in error:', error.code, error.message, error.stack);
-          alert('Error signing in: ' + (error.message || 'Unknown error'));
+          console.error('Registration error:', error.code, error.message, error.stack);
+          alert('Registration failed: ' + error.message);
         }
-      }
+      });
+    }
 
-      const registerForm = document.getElementById('registerForm');
-      if (registerForm) {
-        registerForm.addEventListener('submit', async (e) => {
-          e.preventDefault();
-          console.log('Register form submitted');
-          const method = document.getElementById('registerMethod').value;
-          const password = document.getElementById('registerPassword').value.trim();
+    const businessTypeSelect = document.getElementById('businessType');
+    if (businessTypeSelect) {
+      businessTypeSelect.addEventListener('change', (e) => {
+        console.log('Business Type changed:', e.target.value);
+        const otherField = document.getElementById('businessTypeOther');
+        const isOther = e.target.value === 'Other';
+        otherField.classList.toggle('conditional', !isOther);
+        otherField.style.display = isOther ? 'block' : 'none';
+        otherField.required = isOther;
+      });
+    }
 
-          if (!password && method === 'email') {
-            console.warn('Password is empty');
-            alert('Please enter a password.');
+    const hasBusinessAccountSelect = document.getElementById('hasBusinessAccount');
+    if (hasBusinessAccountSelect) {
+      hasBusinessAccountSelect.addEventListener('change', (e) => {
+        console.log('Has Business Account changed:', e.target.value);
+        const bankField = document.getElementById('bankName');
+        const isYes = e.target.value === 'Yes';
+        bankField.classList.toggle('conditional', !isYes);
+        bankField.style.display = isYes ? 'block' : 'none';
+        bankField.required = isYes;
+      });
+    }
+
+    const businessForm = document.getElementById('businessForm');
+    if (businessForm) {
+      businessForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        console.log('Register Business form submitted');
+        const ownerName = document.getElementById('ownerName').value.trim();
+        const ownerId = document.getElementById('ownerId').value.trim();
+        const ownerContactNumber = document.getElementById('ownerContactNumber').value.trim();
+        const residentialAddress = document.getElementById('residentialAddress').value.trim();
+        const businessName = document.getElementById('businessName').value.trim();
+        const businessContactNumber = document.getElementById('businessContactNumber').value.trim();
+        let businessType = document.getElementById('businessType').value;
+        const businessTypeOther = document.getElementById('businessTypeOther').value.trim();
+        const businessAddress = document.getElementById('businessAddress').value.trim();
+        let googleMapsUrl = document.getElementById('googleMapsUrl').value.trim();
+        const municipalityName = document.getElementById('municipalityName').value.trim();
+        const operationYears = parseInt(document.getElementById('operationYears').value);
+        const operationMonths = parseInt(document.getElementById('operationMonths').value);
+        const hasBusinessAccount = document.getElementById('hasBusinessAccount').value;
+        const bankName = document.getElementById('bankName').value;
+        const user = auth.currentUser;
+
+        try {
+          if (businessType === 'Other' && !businessTypeOther) {
+            console.warn('Business type Other selected but no specification provided');
+            alert('Please specify the business type.');
+            return;
+          }
+          if (hasBusinessAccount === 'Yes' && !bankName) {
+            console.warn('Business account Yes selected but no bank provided');
+            alert('Please select a bank.');
+            return;
+          }
+          if (!/^\+\d{10,15}$/.test(ownerContactNumber)) {
+            console.warn('Invalid owner contact number:', ownerContactNumber);
+            alert('Please enter a valid owner contact number starting with + (e.g., +27xxxxxxxxx).');
+            return;
+          }
+          if (!/^\+\d{10,15}$/.test(businessContactNumber)) {
+            console.warn('Invalid business contact number:', businessContactNumber);
+            alert('Please enter a valid business contact number starting with + (e.g., +27xxxxxxxxx).');
+            return;
+          }
+          if (!municipalityName) {
+            console.warn('Municipality name is empty');
+            alert('Please enter a municipality name.');
             return;
           }
 
-          try {
-            if (method === 'email') {
-              const emailInput = document.getElementById('registerEmail');
-              if (!emailInput) {
-                console.error('Email input not found');
-                alert('Internal error: Email input not found.');
-                return;
-              }
-              const email = emailInput.value.trim();
-              console.log('Email input value:', email);
-              if (!email) {
-                console.warn('Email is empty');
-                alert('Please enter an email.');
-                return;
-              }
-              if (!/\S+@\S+\.\S+/.test(email)) {
-                console.warn('Invalid email format:', email);
-                alert('Please enter a valid email.');
-                return;
-              }
-              console.log('Attempting email registration:', email);
-              await auth.createUserWithEmailAndPassword(email, password);
-              console.log('Registered with email:', email);
-            } else {
-              const phoneInput = document.getElementById('registerPhone');
-              if (!phoneInput) {
-                console.error('Phone input not found');
-                alert('Internal error: Phone input not found.');
-                return;
-              }
-              let phone = phoneInput.value.trim();
-              console.log('Raw phone input:', phone);
-              phone = phone.replace(/[\s\-\(\)]/g, '');
-              if (!phone) {
-                console.warn('Phone number is empty');
-                alert('Please enter a phone number.');
-                return;
-              }
-              if (!/^\+\d{10,15}$/.test(phone)) {
-                console.warn('Invalid phone format:', phone);
-                alert('Please enter a valid phone number starting with + (e.g., +27xxxxxxxxx).');
-                return;
-              }
-              console.log('Processed phone number:', phone);
-              console.log('Attempting phone registration:', phone);
-              const phoneDoc = await firebase.firestore().getDoc(firebase.firestore().doc(db, 'phoneMappings', phone));
-              if (phoneDoc.exists()) {
-                console.warn('Phone already registered:', phone);
-                alert('Phone number already registered. Please sign in.');
-                return;
-              }
-              console.log('Sending SMS for phone:', phone);
-              const confirmationResult = await auth.signInWithPhoneNumber(phone);
-              const code = prompt('Enter the verification code sent to your phone:');
-              if (code) {
-                console.log('Verifying SMS code for registration');
-                const userCredential = await confirmationResult.confirm(code);
-                const user = userCredential.user;
-                console.log('Registered with phone:', phone, 'User ID:', user.uid);
-                await firebase.firestore().setDoc(firebase.firestore().doc(db, 'phoneMappings', phone), {
-                  phone: phone,
-                  userId: user.uid
-                });
-              } else {
-                console.warn('No verification code provided');
-                alert('Verification code required.');
-                return;
-              }
-            }
-          } catch (error) {
-            console.error('Registration error:', error.code, error.message, error.stack);
-            alert('Error registering: ' + (error.message || 'Unknown error'));
+          const embedUrl = getEmbedUrl(googleMapsUrl);
+          if (googleMapsUrl && !embedUrl) {
+            console.warn('Invalid Google Maps URL:', googleMapsUrl);
           }
-        });
-      } else {
-        console.error('registerForm not found');
-      }
 
-      const businessTypeSelect = document.getElementById('businessType');
-      if (businessTypeSelect) {
-        businessTypeSelect.addEventListener('change', (e) => {
-          console.log('Business Type changed:', e.target.value);
-          const otherField = document.getElementById('businessTypeOther');
-          const isOther = e.target.value === 'Other';
-          otherField.classList.toggle('conditional', !isOther);
-          otherField.style.display = isOther ? 'block' : 'none';
-          otherField.required = isOther;
-        });
-      }
-
-      const hasBusinessAccountSelect = document.getElementById('hasBusinessAccount');
-      if (hasBusinessAccountSelect) {
-        hasBusinessAccountSelect.addEventListener('change', (e) => {
-          console.log('Has Business Account changed:', e.target.value);
-          const bankField = document.getElementById('bankName');
-          const isYes = e.target.value === 'Yes';
-          bankField.classList.toggle('conditional', !isYes);
-          bankField.style.display = isYes ? 'block' : 'none';
-          bankField.required = isYes;
-        });
-      }
-
-      const businessForm = document.getElementById('businessForm');
-      if (businessForm) {
-        businessForm.addEventListener('submit', async (e) => {
-          e.preventDefault();
-          console.log('Register Business form submitted');
-          const ownerName = document.getElementById('ownerName').value.trim();
-          const ownerId = document.getElementById('ownerId').value.trim();
-          const ownerContactNumber = document.getElementById('ownerContactNumber').value.trim();
-          const residentialAddress = document.getElementById('residentialAddress').value.trim();
-          const businessName = document.getElementById('businessName').value.trim();
-          const businessContactNumber = document.getElementById('businessContactNumber').value.trim();
-          let businessType = document.getElementById('businessType').value;
-          const businessTypeOther = document.getElementById('businessTypeOther').value.trim();
-          const businessAddress = document.getElementById('businessAddress').value.trim();
-          let googleMapsUrl = document.getElementById('googleMapsUrl').value.trim();
-          const municipalityName = document.getElementById('municipalityName').value.trim();
-          const operationYears = parseInt(document.getElementById('operationYears').value);
-          const operationMonths = parseInt(document.getElementById('operationMonths').value);
-          const hasBusinessAccount = document.getElementById('hasBusinessAccount').value;
-          const bankName = document.getElementById('bankName').value;
-          const user = auth.currentUser;
-
-          try {
-            if (businessType === 'Other' && !businessTypeOther) {
-              console.warn('Business type Other selected but no specification provided');
-              alert('Please specify the business type.');
-              return;
-            }
-            if (hasBusinessAccount === 'Yes' && !bankName) {
-              console.warn('Business account Yes selected but no bank provided');
-              alert('Please select a bank.');
-              return;
-            }
-            if (!/^\+\d{10,15}$/.test(ownerContactNumber)) {
-              console.warn('Invalid owner contact number:', ownerContactNumber);
-              alert('Please enter a valid owner contact number starting with + (e.g., +27xxxxxxxxx).');
-              return;
-            }
-            if (!/^\+\d{10,15}$/.test(businessContactNumber)) {
-              console.warn('Invalid business contact number:', businessContactNumber);
-              alert('Please enter a valid business contact number starting with + (e.g., +27xxxxxxxxx).');
-              return;
-            }
-            if (!municipalityName) {
-              console.warn('Municipality name is empty');
-              alert('Please enter a municipality name.');
-              return;
-            }
-
-            const embedUrl = getEmbedUrl(googleMapsUrl);
-            if (googleMapsUrl && !embedUrl) {
-              console.warn('Invalid Google Maps URL:', googleMapsUrl);
-            }
-
-            if (user) {
-              console.log('Saving business data for user:', user.uid);
-              await firebase.firestore().setDoc(firebase.firestore().doc(db, 'businesses', user.uid), {
-                ownerName,
-                ownerId,
-                ownerContactNumber,
-                residentialAddress,
-                businessName,
-                businessContactNumber,
-                businessType: businessType === 'Other' ? businessTypeOther : businessType,
-                businessAddress,
-                googleMapsUrl,
-                embedUrl,
-                municipalityName,
-                operationYears,
-                operationMonths,
-                hasBusinessAccount,
-                bankName: hasBusinessAccount === 'Yes' ? bankName : null,
-                userId: user.uid
-              });
-              console.log('Business data saved successfully');
-              alert('Business registered successfully!');
-              showSection('dashboard');
-            } else {
-              console.warn('No authenticated user');
-              alert('Please sign in to register a business.');
-            }
-          } catch (error) {
-            console.error('Business registration error:', error);
-            alert('Error registering business: ' + error.message);
+          if (user) {
+            console.log('Saving business data for user:', user.uid);
+            await firebase.firestore().setDoc(firebase.firestore().doc(db, 'businesses', user.uid), {
+              ownerName,
+              ownerId,
+              ownerContactNumber,
+              residentialAddress,
+              businessName,
+              businessContactNumber,
+              businessType: businessType === 'Other' ? businessTypeOther : businessType,
+              businessAddress,
+              googleMapsUrl,
+              embedUrl,
+              municipalityName,
+              operationYears,
+              operationMonths,
+              hasBusinessAccount,
+              bankName: hasBusinessAccount === 'Yes' ? bankName : null,
+              userId: user.uid
+            });
+            console.log('Business data saved successfully');
+            alert('Business registered successfully!');
+            showSection('dashboard');
+          } else {
+            console.warn('No authenticated user');
+            alert('Please sign in to register a business.');
           }
-        });
-      }
+        } catch (error) {
+          console.error('Business registration error:', error);
+          alert('Error registering business: ' + error.message);
+        }
+      });
+    }
 
-      const salesForm = document.getElementById('salesForm');
-      if (salesForm) {
-        salesForm.addEventListener('submit', async (e) => {
-          e.preventDefault();
-          console.log('Add Sale form submitted');
-          const amount = parseFloat(document.getElementById('saleAmount').value);
-          const cost = parseFloat(document.getElementById('saleCost').value);
-          const date = document.getElementById('saleDate').value;
-          const user = auth.currentUser;
+    const salesForm = document.getElementById('salesForm');
+    if (salesForm) {
+      salesForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        console.log('Add Sale form submitted');
+        const amount = parseFloat(document.getElementById('saleAmount').value);
+        const cost = parseFloat(document.getElementById('saleCost').value);
+        const date = document.getElementById('saleDate').value;
+        const user = auth.currentUser;
 
-          try {
-            if (user) {
-              console.log('Adding sale:', { amount, cost, date });
-              await firebase.firestore().addDoc(firebase.firestore().collection(db, 'sales'), {
-                amount,
-                cost,
-                date,
-                userId: user.uid,
-                type: 'sale'
-              });
-              console.log('Sale added successfully');
-              alert('Sale added successfully!');
-              document.getElementById('salesForm').reset();
-              loadSalesAndExpenses();
-            }
-          } catch (error) {
-            console.error('Error adding sale:', error);
-            alert('Error adding sale: ' + error.message);
+        try {
+          if (user) {
+            console.log('Adding sale:', { amount, cost, date });
+            await firebase.firestore().addDoc(firebase.firestore().collection(db, 'sales'), {
+              amount,
+              cost,
+              date,
+              userId: user.uid,
+              type: 'sale'
+            });
+            console.log('Sale added successfully');
+            alert('Sale added successfully!');
+            document.getElementById('salesForm').reset();
+            loadSalesAndExpenses();
           }
-        });
-      }
+        } catch (error) {
+          console.error('Error adding sale:', error);
+          alert('Error adding sale: ' + error.message);
+        }
+      });
+    }
 
-      const expensesForm = document.getElementById('expensesForm');
-      if (expensesForm) {
-        expensesForm.addEventListener('submit', async (e) => {
-          e.preventDefault();
-          console.log('Add Expense form submitted');
-          const amount = parseFloat(document.getElementById('expenseAmount').value);
-          const category = document.getElementById('expenseCategory').value.trim();
-          const date = document.getElementById('expenseDate').value;
-          const user = auth.currentUser;
+    const expensesForm = document.getElementById('expensesForm');
+    if (expensesForm) {
+      expensesForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        console.log('Add Expense form submitted');
+        const amount = parseFloat(document.getElementById('expenseAmount').value);
+        const category = document.getElementById('expenseCategory').value.trim();
+        const date = document.getElementById('expenseDate').value;
+        const user = auth.currentUser;
 
-          try {
-            if (user) {
-              console.log('Adding expense:', { amount, category, date });
-              await firebase.firestore().addDoc(firebase.firestore().collection(db, 'expenses'), {
-                amount,
-                category,
-                date,
-                userId: user.uid,
-                type: 'expense'
-              });
-              console.log('Expense added successfully');
-              alert('Expense added successfully!');
-              document.getElementById('expensesForm').reset();
-              loadSalesAndExpenses();
-            }
-          } catch (error) {
-            console.error('Error adding expense:', error);
-            alert('Error adding expense: ' + error.message);
+        try {
+          if (user) {
+            console.log('Adding expense:', { amount, category, date });
+            await firebase.firestore().addDoc(firebase.firestore().collection(db, 'expenses'), {
+              amount,
+              category,
+              date,
+              userId: user.uid,
+              type: 'expense'
+            });
+            console.log('Expense added successfully');
+            alert('Expense added successfully!');
+            document.getElementById('expensesForm').reset();
+            loadSalesAndExpenses();
           }
-        });
-      }
-    });
+        } catch (error) {
+          console.error('Error adding expense:', error);
+          alert('Error adding expense: ' + error.message);
+        }
+      });
+    }
 
     function signOut() {
       console.log('Sign Out button clicked');
@@ -885,15 +952,20 @@
     }
 
     if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        for (let reg of registrations) {
+          reg.unregister().then(() => {
+            console.log('Service Worker unregistered');
+          });
+        }
+      });
       window.addEventListener('load', () => {
         console.log('Registering Service Worker');
-        navigator.serviceWorker.register('/sw.js')
-          .then(reg => {
-            console.log('Service Worker registered with scope:', reg.scope);
-          })
-          .catch(error => {
-            console.error('Service Worker registration failed:', error);
-          });
+        navigator.serviceWorker.register('/sw.js').then(reg => {
+          console.log('Service Worker registered:', reg.scope);
+        }).catch(error => {
+          console.error('Service Worker registration failed:', error);
+        });
       });
     }
   </script>
