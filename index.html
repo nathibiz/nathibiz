@@ -2,10 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device=device-width, initial-scale=1.0">
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Business & Financial Tracker</title>
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" type="image/png" href="/icon-192x192.png">
@@ -17,7 +14,7 @@
     body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f3f4f6; }
     .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
     h2, h3 { color: #1f2937; }
-    input, button { margin: 10px 0; padding: 8px; width: calc(100% - 18px); border: 1px solid #d1d5db; border-radius: 4px; box-sizing: border-box; }
+    input, button, select { margin: 10px 0; padding: 8px; width: calc(100% - 18px); border: 1px solid #d1d5db; border-radius: 4px; }
     button { background-color: #4b5563; color: white; cursor: pointer; }
     button:hover { background-color: #374151; }
     .hidden { display: none; }
@@ -25,28 +22,37 @@
     th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; }
     th { background-color: #f9fafb; }
     .conditional { display: none; }
-    #debugInfo { color: #666; font-size: 12px; margin-top: 10px; }
   </style>
 </head>
 <body>
   <div class="container">
-    <section id="auth">
+    <section id="auth" class="hidden">
       <h2>Sign In</h2>
-      <div id="debugInfo"></div>
       <form id="signInForm">
-        <input type="email" id="signInEmail" placeholder="Email" required><br>
-        <input type="password" id="signInPassword" placeholder="Password" required><br>
-        <button type="submit" id="signInButton">Sign In</button>
+        <select id="signInMethod">
+          <option value="email">Email</option>
+          <option value="phone">Phone Number</option>
+        </select><br>
+        <input type="email" id="signInEmail" placeholder="Email" class="email-input"><br>
+        <input type="tel" id="signInPhone" placeholder="Phone Number (e.g., +27xxxxxxxxx)" class="phone-input hidden"><br>
+        <input type="password" id="signInPassword" placeholder="Password" class="email-input"><br>
+        <div id="recaptcha-container" class="phone-input hidden"></div>
+        <button type="submit">Sign In</button>
       </form>
       <p>Don't have an account? <a href="#" id="showRegister">Register</a></p>
-      <p>Forgot password? <a href="#" id="resetPassword">Reset Password</a></p>
     </section>
 
     <section id="register" class="hidden">
       <h2>Register</h2>
       <form id="registerForm">
-        <input type="email" id="registerEmail" placeholder="Email" required><br>
-        <input type="password" id="registerPassword" placeholder="Password" required><br>
+        <select id="registerMethod">
+          <option value="email">Email</option>
+          <option value="phone">Phone Number</option>
+        </select><br>
+        <input type="email" id="registerEmail" placeholder="Email" class="email-input"><br>
+        <input type="tel" id="registerPhone" placeholder="Phone Number (e.g., +27xxxxxxxxx)" class="phone-input hidden"><br>
+        <input type="password" id="registerPassword" placeholder="Password" class="email-input"><br>
+        <div id="recaptcha-container-register" class="phone-input hidden"></div>
         <button type="submit">Register</button>
       </form>
       <p>Already have an account? <a href="#" id="showSignIn">Sign In</a></p>
@@ -55,12 +61,7 @@
     <section id="businessRegistration" class="hidden">
       <h2>Register Your Business</h2>
       <form id="businessForm">
-        <input type="text" id="ownerName" placeholder="Owner Name" required><br>
-        <input type="text" id="ownerId" placeholder="ID/Passport Number" required><br>
-        <input type="tel" id="ownerContactNumber" placeholder="Contact Number (e.g., +27xxxxxxxxx)" required><br>
-        <input type="text" id="residentialAddress" placeholder="Residential Address" required><br>
         <input type="text" id="businessName" placeholder="Business Name" required><br>
-        <input type="tel" id="businessContactNumber" placeholder="Business Contact Number (e.g., +27xxxxxxxxx)" required><br>
         <select id="businessType" required>
           <option value="" disabled selected>Select Business Type</option>
           <option value="Spaza/Tuck shop">Spaza/Tuck shop</option>
@@ -74,10 +75,13 @@
           <option value="Other">Other</option>
         </select><br>
         <input type="text" id="businessTypeOther" placeholder="Specify Business Type" class="conditional"><br>
-        <input type="text" id="businessAddress" placeholder="Business Address" required><br>
-        <input type="text" id="googleMapsUrl" placeholder="Location for Business (Google Maps URL, e.g., https://www.google.com/maps/place/...)"><br>
+        <input type="text" id="ownerName" placeholder="Owner Name" required><br>
+        <input type="text" id="ownerId" placeholder="ID/Passport Number" required><br>
+        <input type="tel" id="contactNumber" placeholder="Contact Number (e.g., +27xxxxxxxxx)" required><br>
+        <input type="text" id="physicalAddress" placeholder="Physical Address" required><br>
+        <input type="text" id="postalAddress" placeholder="Postal Address" required><br>
+        <input type="text" id="googleMapsUrl" placeholder="Google Maps URL (e.g., https://www.google.com/maps/place/...)"><br>
         <button type="button" onclick="getCurrentLocation()">Send Your Location</button><br>
-        <input type="text" id="municipalityName" placeholder="Municipality Name" required><br>
         <input type="number" id="operationYears" placeholder="Years in Operation" min="0" required><br>
         <input type="number" id="operationMonths" placeholder="Months in Operation" min="0" max="11" required><br>
         <select id="hasBusinessAccount" required>
@@ -140,16 +144,6 @@
   </div>
 
   <script>
-    // Global error handler
-    window.onerror = function(msg, url, line, col, error) {
-      console.error('Global error:', msg, 'at', url, line + ':' + col, error);
-      alert('Unexpected error: ' + msg);
-      return false;
-    };
-
-    console.log('Script loaded at:', new Date().toISOString());
-    document.getElementById('debugInfo').innerText = `Script loaded at ${new Date().toLocaleString()}`;
-
     const firebaseConfig = {
       apiKey: "AIzaSyBjop9idbdOohdUtDvztaPmlLk-w4Xiy3c",
       authDomain: "nathibiz.firebaseapp.com",
@@ -159,432 +153,128 @@
       appId: "1:585170233799:web:e79c3b9f334d23343b91e2"
     };
 
-    try {
-      console.log('Initializing Firebase');
-      firebase.initializeApp(firebaseConfig);
-      console.log('Firebase initialized, version:', firebase.SDK_VERSION);
-      document.getElementById('debugInfo').innerText += `\nFirebase v${firebase.SDK_VERSION} initialized`;
-    } catch (error) {
-      console.error('Firebase init error:', error);
-      alert('Firebase initialization failed: ' + error.message);
-    }
-
+    firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    let isProcessing = false; // Debounce flag
-
     function showSection(sectionId) {
-      console.log('Showing section:', sectionId);
       document.querySelectorAll('section').forEach(section => section.classList.add('hidden'));
-      const section = document.getElementById(sectionId);
-      if (section) {
-        section.classList.remove('hidden');
-        if (sectionId === 'dashboard') {
-          loadBusinessDetails();
-          loadSalesAndExpenses();
-        }
-      } else {
-        console.error('Section not found:', sectionId);
-        alert('Error: Section ' + sectionId + ' not found');
+      document.getElementById(sectionId).classList.remove('hidden');
+      if (sectionId === 'dashboard') {
+        loadBusinessDetails();
+        loadSalesAndExpenses();
       }
     }
 
     auth.onAuthStateChanged(user => {
-      console.log('Auth state changed:', user ? `User ${user.uid}, Email: ${user.email}` : 'No user');
-      document.getElementById('debugInfo').innerText += `\nAuth state: ${user ? 'Signed in as ' + user.email : 'No user'}`;
       if (user) {
-        let attempts = 0;
-        const maxAttempts = 3;
-        const checkBusiness = () => {
-          setTimeout(() => {
-            firebase.firestore().getDoc(firebase.firestore().doc(db, 'businesses', user.uid)).then(doc => {
-              console.log('Business check result:', doc.exists());
-              document.getElementById('debugInfo').innerText += `\nBusiness check: ${doc.exists() ? 'Exists' : 'Not found'}`;
-              showSection(doc.exists() ? 'dashboard' : 'businessRegistration');
-            }).catch(error => {
-              console.error('Error checking business:', error);
-              document.getElementById('debugInfo').innerText += `\nBusiness check error: ${error.message}`;
-              if (attempts < maxAttempts) {
-                attempts++;
-                checkBusiness(); // Retry
-              } else {
-                alert('Failed to load business data after retries: ' + error.message);
-                showSection('businessRegistration');
-                window.location.reload();
-              }
-            });
-          }, 1000);
-        };
-        checkBusiness();
+        firebase.firestore().getDoc(firebase.firestore().doc(db, 'businesses', user.uid)).then(doc => {
+          if (doc.exists()) {
+            showSection('dashboard');
+          } else {
+            showSection('businessRegistration');
+          }
+        });
       } else {
         showSection('auth');
       }
     });
 
-    console.log('Setting up event listeners');
-    const signInForm = document.getElementById('signInForm');
-    const signInButton = document.getElementById('signInButton');
-    const debugInfo = document.getElementById('debugInfo');
+    document.getElementById('showRegister').addEventListener('click', () => showSection('register'));
+    document.getElementById('showSignIn').addEventListener('click', () => showSection('auth'));
 
-    if (!signInForm) {
-      console.error('signInForm not found');
-      alert('Critical error: Sign In form not found');
-    } else {
-      console.log('signInForm found');
-      debugInfo.innerText += '\nSign In form detected';
-    }
-
-    if (!signInButton) {
-      console.error('signInButton not found');
-      alert('Critical error: Sign In button not found');
-    } else {
-      console.log('signInButton found');
-      debugInfo.innerText += '\nSign In button detected';
-    }
-
-    if (signInForm) {
-      signInForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        if (isProcessing) return;
-        isProcessing = true;
-        console.log('Sign In form submitted');
-        debugInfo.innerText += '\nForm submitted';
-        alert('Sign In form submitted');
-        await handleSignIn();
-        isProcessing = false;
-      });
-    }
-
-    if (signInButton) {
-      signInButton.addEventListener('click', async (e) => {
-        e.preventDefault();
-        if (isProcessing) return;
-        isProcessing = true;
-        console.log('Sign In button clicked');
-        debugInfo.innerText += '\nButton clicked';
-        alert('Sign In button clicked');
-        await handleSignIn();
-        isProcessing = false;
-      });
-    }
-
-    async function handleSignIn() {
-      const emailInput = document.getElementById('signInEmail');
-      const passwordInput = document.getElementById('signInPassword');
-      if (!emailInput || !passwordInput) {
-        console.error('Email or password input missing');
-        alert('Error: Email or password input not found');
-        return;
-      }
-      const email = emailInput.value.trim();
-      const password = passwordInput.value.trim();
-      console.log('Email:', email, 'Password length:', password.length);
-      debugInfo.innerText += `\nAttempting email sign-in\nEmail: ${email}`;
-      if (!email) {
-        console.warn('Email empty');
-        alert('Please enter an email');
-        return;
-      }
-      if (!password) {
-        console.warn('Password empty');
-        alert('Please enter a password');
-        return;
-      }
-      if (!/\S+@\S+\.\S+/.test(email)) {
-        console.warn('Invalid email:', email);
-        alert('Please enter a valid email');
-        return;
-      }
-      console.log('Calling signInWithEmailAndPassword');
-      debugInfo.innerText += '\nCalling Firebase email auth';
-      alert('Attempting email sign-in');
-      try {
-        const userCredential = await auth.signInWithEmailAndPassword(email, password);
-        console.log('Email sign-in successful, UID:', userCredential.user.uid);
-        debugInfo.innerText += `\nEmail sign-in successful, UID: ${userCredential.user.uid}`;
-        alert('Signed in successfully');
-      } catch (error) {
-        console.error('Sign-in error:', error.code, error.message, error.stack);
-        debugInfo.innerText += `\nError: ${error.message}`;
-        alert('Sign-in failed: ' + error.message);
-      }
-    }
-
-    const showRegisterLink = document.getElementById('showRegister');
-    const showSignInLink = document.getElementById('showSignIn');
-    const resetPasswordLink = document.getElementById('resetPassword');
-    if (showRegisterLink) {
-      showRegisterLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        console.log('Show Register clicked');
-        showSection('register');
-      });
-    }
-    if (showSignInLink) {
-      showSignInLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        console.log('Show Sign In clicked');
-        showSection('auth');
-      });
-    }
-    if (resetPasswordLink) {
-      resetPasswordLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        console.log('Reset Password clicked');
-        const email = document.getElementById('signInEmail').value.trim();
-        if (!email) {
-          alert('Please enter your email to reset password');
-          return;
-        }
-        auth.sendPasswordResetEmail(email).then(() => {
-          console.log('Password reset email sent:', email);
-          alert('Password reset email sent. Check your inbox.');
-        }).catch(error => {
-          console.error('Password reset error:', error);
-          alert('Password reset failed: ' + error.message);
+    // Toggle auth method
+    function toggleAuthInputs(method, formType) {
+      const emailInputs = document.querySelectorAll(`#${formType}Form .email-input`);
+      const phoneInputs = document.querySelectorAll(`#${formType}Form .phone-input`);
+      emailInputs.forEach(input => input.classList.toggle('hidden', method !== 'email'));
+      phoneInputs.forEach(input => input.classList.toggle('hidden', method !== 'phone'));
+      if (method === 'phone' && formType === 'signIn') {
+        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+          'size': 'normal',
+          'callback': () => {}
         });
-      });
+      } else if (method === 'phone' && formType === 'register') {
+        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container-register', {
+          'size': 'normal',
+          'callback': () => {}
+        });
+      }
     }
 
-    const registerForm = document.getElementById('registerForm');
-    if (registerForm) {
-      registerForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        console.log('Register form submitted');
-        const emailInput = document.getElementById('registerEmail');
-        const passwordInput = document.getElementById('registerPassword');
-        if (!emailInput || !passwordInput) {
-          console.error('Email or password input missing');
-          alert('Error: Email or password input not found');
-          return;
+    document.getElementById('signInMethod').addEventListener('change', (e) => toggleAuthInputs(e.target.value, 'signIn'));
+    document.getElementById('registerMethod').addEventListener('change', (e) => toggleAuthInputs(e.target.value, 'register'));
+
+    document.getElementById('signInForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const method = document.getElementById('signInMethod').value;
+      if (method === 'email') {
+        const email = document.getElementById('signInEmail').value;
+        const password = document.getElementById('signInPassword').value;
+        try {
+          await auth.signInWithEmailAndPassword(email, password);
+        } catch (error) {
+          alert('Error signing in: ' + error.message);
         }
-        const email = emailInput.value.trim();
-        const password = passwordInput.value.trim();
-        console.log('Email:', email);
-        if (!email) {
-          console.warn('Email empty');
-          alert('Please enter an email');
-          return;
+      } else {
+        const phone = document.getElementById('signInPhone').value;
+        try {
+          const confirmationResult = await auth.signInWithPhoneNumber(phone, window.recaptchaVerifier);
+          const code = prompt('Enter the verification code sent to your phone:');
+          if (code) {
+            await confirmationResult.confirm(code);
+          }
+        } catch (error) {
+          alert('Error signing in with phone: ' + error.message);
         }
-        if (!password) {
-          console.warn('Password empty');
-          alert('Please enter a password');
-          return;
-        }
-        if (!/\S+@\S+\.\S+/.test(email)) {
-          console.warn('Invalid email:', email);
-          alert('Please enter a valid email');
-          return;
-        }
-        console.log('Calling createUserWithEmailAndPassword');
+      }
+    });
+
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const method = document.getElementById('registerMethod').value;
+      if (method === 'email') {
+        const email = document.getElementById('registerEmail').value;
+        const password = document.getElementById('registerPassword').value;
         try {
           await auth.createUserWithEmailAndPassword(email, password);
-          console.log('Email registration successful');
-          alert('Registered successfully');
         } catch (error) {
-          console.error('Registration error:', error.code, error.message, error.stack);
-          alert('Registration failed: ' + error.message);
+          alert('Error registering: ' + error.message);
         }
-      });
-    }
-
-    const businessTypeSelect = document.getElementById('businessType');
-    if (businessTypeSelect) {
-      businessTypeSelect.addEventListener('change', (e) => {
-        console.log('Business Type changed:', e.target.value);
-        const otherField = document.getElementById('businessTypeOther');
-        const isOther = e.target.value === 'Other';
-        otherField.classList.toggle('conditional', !isOther);
-        otherField.style.display = isOther ? 'block' : 'none';
-        otherField.required = isOther;
-      });
-    }
-
-    const hasBusinessAccountSelect = document.getElementById('hasBusinessAccount');
-    if (hasBusinessAccountSelect) {
-      hasBusinessAccountSelect.addEventListener('change', (e) => {
-        console.log('Has Business Account changed:', e.target.value);
-        const bankField = document.getElementById('bankName');
-        const isYes = e.target.value === 'Yes';
-        bankField.classList.toggle('conditional', !isYes);
-        bankField.style.display = isYes ? 'block' : 'none';
-        bankField.required = isYes;
-      });
-    }
-
-    const businessForm = document.getElementById('businessForm');
-    if (businessForm) {
-      businessForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        console.log('Register Business form submitted');
-        const ownerName = document.getElementById('ownerName').value.trim();
-        const ownerId = document.getElementById('ownerId').value.trim();
-        const ownerContactNumber = document.getElementById('ownerContactNumber').value.trim();
-        const residentialAddress = document.getElementById('residentialAddress').value.trim();
-        const businessName = document.getElementById('businessName').value.trim();
-        const businessContactNumber = document.getElementById('businessContactNumber').value.trim();
-        let businessType = document.getElementById('businessType').value;
-        const businessTypeOther = document.getElementById('businessTypeOther').value.trim();
-        const businessAddress = document.getElementById('businessAddress').value.trim();
-        let googleMapsUrl = document.getElementById('googleMapsUrl').value.trim();
-        const municipalityName = document.getElementById('municipalityName').value.trim();
-        const operationYears = parseInt(document.getElementById('operationYears').value);
-        const operationMonths = parseInt(document.getElementById('operationMonths').value);
-        const hasBusinessAccount = document.getElementById('hasBusinessAccount').value;
-        const bankName = document.getElementById('bankName').value;
-        const user = auth.currentUser;
-
+      } else {
+        const phone = document.getElementById('registerPhone').value;
         try {
-          if (businessType === 'Other' && !businessTypeOther) {
-            console.warn('Business type Other selected but no specification provided');
-            alert('Please specify the business type.');
-            return;
-          }
-          if (hasBusinessAccount === 'Yes' && !bankName) {
-            console.warn('Business account Yes selected but no bank provided');
-            alert('Please select a bank.');
-            return;
-          }
-          if (!/^\+\d{10,15}$/.test(ownerContactNumber)) {
-            console.warn('Invalid owner contact number:', ownerContactNumber);
-            alert('Please enter a valid owner contact number starting with + (e.g., +27xxxxxxxxx).');
-            return;
-          }
-          if (!/^\+\d{10,15}$/.test(businessContactNumber)) {
-            console.warn('Invalid business contact number:', businessContactNumber);
-            alert('Please enter a valid business contact number starting with + (e.g., +27xxxxxxxxx).');
-            return;
-          }
-          if (!municipalityName) {
-            console.warn('Municipality name is empty');
-            alert('Please enter a municipality name.');
-            return;
-          }
-
-          const embedUrl = getEmbedUrl(googleMapsUrl);
-          if (googleMapsUrl && !embedUrl) {
-            console.warn('Invalid Google Maps URL:', googleMapsUrl);
-          }
-
-          if (user) {
-            console.log('Saving business data for user:', user.uid);
-            await firebase.firestore().setDoc(firebase.firestore().doc(db, 'businesses', user.uid), {
-              ownerName,
-              ownerId,
-              ownerContactNumber,
-              residentialAddress,
-              businessName,
-              businessContactNumber,
-              businessType: businessType === 'Other' ? businessTypeOther : businessType,
-              businessAddress,
-              googleMapsUrl,
-              embedUrl,
-              municipalityName,
-              operationYears,
-              operationMonths,
-              hasBusinessAccount,
-              bankName: hasBusinessAccount === 'Yes' ? bankName : null,
-              userId: user.uid
-            });
-            console.log('Business data saved successfully');
-            alert('Business registered successfully!');
-            showSection('dashboard');
-          } else {
-            console.warn('No authenticated user');
-            alert('Please sign in to register a business.');
+          const confirmationResult = await auth.signInWithPhoneNumber(phone, window.recaptchaVerifier);
+          const code = prompt('Enter the verification code sent to your phone:');
+          if (code) {
+            await confirmationResult.confirm(code);
           }
         } catch (error) {
-          console.error('Business registration error:', error);
-          alert('Error registering business: ' + error.message);
+          alert('Error registering with phone: ' + error.message);
         }
-      });
-    }
-
-    const salesForm = document.getElementById('salesForm');
-    if (salesForm) {
-      salesForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        console.log('Add Sale form submitted');
-        const amount = parseFloat(document.getElementById('saleAmount').value);
-        const cost = parseFloat(document.getElementById('saleCost').value);
-        const date = document.getElementById('saleDate').value;
-        const user = auth.currentUser;
-
-        try {
-          if (user) {
-            console.log('Adding sale:', { amount, cost, date });
-            await firebase.firestore().addDoc(firebase.firestore().collection(db, 'sales'), {
-              amount,
-              cost,
-              date,
-              userId: user.uid,
-              type: 'sale'
-            });
-            console.log('Sale added successfully');
-            alert('Sale added successfully!');
-            document.getElementById('salesForm').reset();
-            loadSalesAndExpenses();
-          }
-        } catch (error) {
-          console.error('Error adding sale:', error);
-          alert('Error adding sale: ' + error.message);
-        }
-      });
-    }
-
-    const expensesForm = document.getElementById('expensesForm');
-    if (expensesForm) {
-      expensesForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        console.log('Add Expense form submitted');
-        const amount = parseFloat(document.getElementById('expenseAmount').value);
-        const category = document.getElementById('expenseCategory').value.trim();
-        const date = document.getElementById('expenseDate').value;
-        const user = auth.currentUser;
-
-        try {
-          if (user) {
-            console.log('Adding expense:', { amount, category, date });
-            await firebase.firestore().addDoc(firebase.firestore().collection(db, 'expenses'), {
-              amount,
-              category,
-              date,
-              userId: user.uid,
-              type: 'expense'
-            });
-            console.log('Expense added successfully');
-            alert('Expense added successfully!');
-            document.getElementById('expensesForm').reset();
-            loadSalesAndExpenses();
-          }
-        } catch (error) {
-          console.error('Error adding expense:', error);
-          alert('Error adding expense: ' + error.message);
-        }
-      });
-    }
+      }
+    });
 
     function signOut() {
-      console.log('Sign Out button clicked');
-      auth.signOut().catch(error => {
-        console.error('Sign out error:', error);
-        alert('Error signing out: ' + error.message);
-      });
+      auth.signOut();
     }
 
+    // Simplified Google Maps handling
     function getEmbedUrl(googleMapsUrl) {
       if (!googleMapsUrl) return '';
       try {
+        // Try to use URL directly as embed if it contains 'embed'
         if (googleMapsUrl.includes('embed')) {
           return googleMapsUrl;
         }
+        // Extract coordinates or place
         const coordMatch = googleMapsUrl.match(/@([-.\d]+),([-.\d]+)/) || googleMapsUrl.match(/q=([-.\d]+),([-.\d]+)/);
         if (coordMatch) {
           const lat = coordMatch[1];
           const lng = coordMatch[2];
           return `https://www.google.com/maps/embed/v1/place?q=${lat},${lng}&zoom=15`;
         }
+        // Fallback to attempt place-based embed
         const placeMatch = googleMapsUrl.match(/place\/([^/]+)/);
         if (placeMatch) {
           const place = encodeURIComponent(placeMatch[1]);
@@ -593,11 +283,10 @@
       } catch (error) {
         console.error('Error parsing Google Maps URL:', error);
       }
-      return '';
+      return ''; // Invalid or unsupported URL
     }
 
     function getCurrentLocation() {
-      console.log('Send Your Location button clicked');
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
@@ -605,8 +294,7 @@
             const lng = position.coords.longitude;
             const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
             document.getElementById('googleMapsUrl').value = mapsUrl;
-            console.log('Location set:', mapsUrl);
-            alert('Location set successfully.');
+            alert('Location set in Google Maps URL field.');
           },
           (error) => {
             console.error('Geolocation error:', error);
@@ -618,223 +306,291 @@
       }
     }
 
+    // Business form logic
+    document.getElementById('businessType').addEventListener('change', (e) => {
+      const otherField = document.getElementById('businessTypeOther');
+      otherField.classList.toggle('conditional', e.target.value !== 'Other');
+      otherField.required = e.target.value === 'Other';
+    });
+
+    document.getElementById('hasBusinessAccount').addEventListener('change', (e) => {
+      const bankField = document.getElementById('bankName');
+      bankField.classList.toggle('conditional', e.target.value !== 'Yes');
+      bankField.required = e.target.value === 'Yes';
+    });
+
+    document.getElementById('businessForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const businessName = document.getElementById('businessName').value;
+      let businessType = document.getElementById('businessType').value;
+      const businessTypeOther = document.getElementById('businessTypeOther').value;
+      const ownerName = document.getElementById('ownerName').value;
+      const ownerId = document.getElementById('ownerId').value;
+      const contactNumber = document.getElementById('contactNumber').value;
+      const physicalAddress = document.getElementById('physicalAddress').value;
+      const postalAddress = document.getElementById('postalAddress').value;
+      let googleMapsUrl = document.getElementById('googleMapsUrl').value;
+      const operationYears = parseInt(document.getElementById('operationYears').value);
+      const operationMonths = parseInt(document.getElementById('operationMonths').value);
+      const hasBusinessAccount = document.getElementById('hasBusinessAccount').value;
+      const bankName = document.getElementById('bankName').value;
+      const user = auth.currentUser;
+
+      if (businessType === 'Other' && !businessTypeOther) {
+        alert('Please specify the business type.');
+        return;
+      }
+      if (hasBusinessAccount === 'Yes' && !bankName) {
+        alert('Please select a bank.');
+        return;
+      }
+      if (!/^\+?\d{10,15}$/.test(contactNumber)) {
+        alert('Please enter a valid contact number (e.g., +27xxxxxxxxx).');
+        return;
+      }
+
+      const embedUrl = getEmbedUrl(googleMapsUrl);
+      if (googleMapsUrl && !embedUrl) {
+        console.warn('Invalid Google Maps URL:', googleMapsUrl);
+      }
+
+      if (user) {
+        await firebase.firestore().setDoc(firebase.firestore().doc(db, 'businesses', user.uid), {
+          businessName,
+          businessType: businessType === 'Other' ? businessTypeOther : businessType,
+          ownerName,
+          ownerId,
+          contactNumber,
+          physicalAddress,
+          postalAddress,
+          googleMapsUrl,
+          embedUrl,
+          operationYears,
+          operationMonths,
+          hasBusinessAccount,
+          bankName: hasBusinessAccount === 'Yes' ? bankName : null,
+          userId: user.uid
+        });
+        alert('Business registered successfully!');
+        showSection('dashboard');
+      } else {
+        alert('Please sign in to register a business.');
+      }
+    });
+
     async function loadBusinessDetails() {
       const user = auth.currentUser;
       if (user) {
-        try {
-          console.log('Loading business details for user:', user.uid);
-          const businessDoc = await firebase.firestore().getDoc(firebase.firestore().doc(db, 'businesses', user.uid));
-          if (businessDoc.exists()) {
-            const data = businessDoc.data();
-            console.log('Loaded business data:', data);
-            document.getElementById('businessDetails').innerHTML = `
-              <p><strong>Owner Name:</strong> ${data.ownerName}</p>
-              <p><strong>ID/Passport:</strong> ${data.ownerId}</p>
-              <p><strong>Owner Contact Number:</strong> ${data.ownerContactNumber}</p>
-              <p><strong>Residential Address:</strong> ${data.residentialAddress}</p>
-              <p><strong>Business Name:</strong> ${data.businessName}</p>
-              <p><strong>Business Contact Number:</strong> ${data.businessContactNumber}</p>
-              <p><strong>Business Type:</strong> ${data.businessType}</p>
-              <p><strong>Business Address:</strong> ${data.businessAddress}</p>
-              <p><strong>Location:</strong> <a href="${data.googleMapsUrl}" target="_blank">${data.googleMapsUrl || 'Not set'}</a></p>
-              <p><strong>Municipality Name:</strong> ${data.municipalityName}</p>
-              <p><strong>Operation Time:</strong> ${data.operationYears} years, ${data.operationMonths} months</p>
-              <p><strong>Business Account:</strong> ${data.hasBusinessAccount}${data.bankName ? ' (' + data.bankName + ')' : ''}</p>
-            `;
-            const mapIframe = document.getElementById('mapIframe');
-            if (data.embedUrl) {
-              mapIframe.src = data.embedUrl;
-              mapIframe.style.display = 'block';
-              console.log('Map iframe set to:', data.embedUrl);
-            } else {
-              mapIframe.style.display = 'none';
-              console.log('No valid map URL; iframe hidden');
-            }
+        const businessDoc = await firebase.firestore().getDoc(firebase.firestore().doc(db, 'businesses', user.uid));
+        if (businessDoc.exists()) {
+          const data = businessDoc.data();
+          document.getElementById('businessDetails').innerHTML = `
+            <p><strong>Business Name:</strong> ${data.businessName}</p>
+            <p><strong>Business Type:</strong> ${data.businessType}</p>
+            <p><strong>Owner:</strong> ${data.ownerName}</p>
+            <p><strong>ID/Passport:</strong> ${data.ownerId}</p>
+            <p><strong>Contact Number:</strong> ${data.contactNumber}</p>
+            <p><strong>Physical Address:</strong> ${data.physicalAddress}</p>
+            <p><strong>Postal Address:</strong> ${data.postalAddress}</p>
+            <p><strong>Location:</strong> <a href="${data.googleMapsUrl}" target="_blank">${data.googleMapsUrl || 'Not set'}</a></p>
+            <p><strong>Operation Time:</strong> ${data.operationYears} years, ${data.operationMonths} months</p>
+            <p><strong>Business Account:</strong> ${data.hasBusinessAccount}${data.bankName ? ' (' + data.bankName + ')' : ''}</p>
+          `;
+          const mapIframe = document.getElementById('mapIframe');
+          if (data.embedUrl) {
+            mapIframe.src = data.embedUrl;
+            mapIframe.style.display = 'block';
+            console.log('Map iframe set to:', data.embedUrl);
           } else {
-            console.log('No business data found; showing registration');
-            showSection('businessRegistration');
+            mapIframe.style.display = 'none';
+            console.log('No valid map URL; iframe hidden');
           }
-        } catch (error) {
-          console.error('Error loading business details:', error);
-          alert('Error loading business details: ' + error.message);
+        } else {
+          showSection('businessRegistration');
         }
       }
     }
+
+    document.getElementById('salesForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const amount = parseFloat(document.getElementById('saleAmount').value);
+      const cost = parseFloat(document.getElementById('saleCost').value);
+      const date = document.getElementById('saleDate').value;
+      const user = auth.currentUser;
+
+      if (user) {
+        await firebase.firestore().addDoc(firebase.firestore().collection(db, 'sales'), {
+          amount,
+          cost,
+          date,
+          userId: user.uid,
+          type: 'sale'
+        });
+        alert('Sale added successfully!');
+        document.getElementById('salesForm').reset();
+        loadSalesAndExpenses();
+      }
+    });
+
+    document.getElementById('expensesForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const amount = parseFloat(document.getElementById('expenseAmount').value);
+      const category = document.getElementById('expenseCategory').value;
+      const date = document.getElementById('expenseDate').value;
+      const user = auth.currentUser;
+
+      if (user) {
+        await firebase.firestore().addDoc(firebase.firestore().collection(db, 'expenses'), {
+          amount,
+          category,
+          date,
+          userId: user.uid,
+          type: 'expense'
+        });
+        alert('Expense added successfully!');
+        document.getElementById('expensesForm').reset();
+        loadSalesAndExpenses();
+      }
+    });
 
     async function loadSalesAndExpenses() {
       const user = auth.currentUser;
       if (user) {
-        try {
-          console.log('Loading sales and expenses for user:', user.uid);
-          const salesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'sales'), firebase.firestore().where('userId', '==', user.uid)));
-          const expensesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'expenses'), firebase.firestore().where('userId', '==', user.uid)));
-          console.log('Loaded sales:', salesSnapshot.docs.length, 'expenses:', expensesSnapshot.docs.length);
-        } catch (error) {
-          console.error('Error loading sales/expenses:', error);
-        }
+        const salesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'sales'), firebase.firestore().where('userId', '==', user.uid)));
+        const expensesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'expenses'), firebase.firestore().where('userId', '==', user.uid)));
+        // Implement display logic if needed
       }
     }
 
     async function generateReport() {
-      console.log('Generate Report button clicked');
       const period = document.getElementById('reportPeriod').value;
       const user = auth.currentUser;
       if (user) {
-        try {
-          console.log('Generating report for period:', period);
-          const salesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'sales'), firebase.firestore().where('userId', '==', user.uid)));
-          const expensesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'expenses'), firebase.firestore().where('userId', '==', user.uid)));
-          let sales = salesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          let expenses = expensesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const salesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'sales'), firebase.firestore().where('userId', '==', user.uid)));
+        const expensesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'expenses'), firebase.firestore().where('userId', '==', user.uid)));
+        let sales = salesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        let expenses = expensesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-          const now = new Date();
-          let startDate, endDate;
+        const now = new Date();
+        let startDate, endDate;
 
-          if (period === 'daily') {
-            startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-          } else if (period === 'weekly') {
-            startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
-            endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() + 7);
-          } else if (period === 'monthly') {
-            startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-            endDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-          }
-
-          sales = sales.filter(sale => {
-            const saleDate = new Date(sale.date);
-            return saleDate >= startDate && saleDate < endDate;
-          });
-
-          expenses = expenses.filter(expense => {
-            const expenseDate = new Date(expense.date);
-            return expenseDate >= startDate && expenseDate < endDate;
-          });
-
-          const totalSales = sales.reduce((sum, sale) => sum + sale.amount, 0);
-          const totalCosts = sales.reduce((sum, sale) => sum + sale.cost, 0);
-          const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-          const profit = totalSales - totalCosts - totalExpenses;
-
-          console.log('Report generated:', { totalSales, totalCosts, totalExpenses, profit });
-          document.getElementById('reportOutput').innerHTML = `
-            <h4>${period.charAt(0).toUpperCase() + period.slice(1)} Report</h4>
-            <table>
-              <tr><th>Metric</th><th>Amount</th></tr>
-              <tr><td>Total Sales</td><td>R${totalSales.toFixed(2)}</td></tr>
-              <tr><td>Total Costs</td><td>R${totalCosts.toFixed(2)}</td></tr>
-              <tr><td>Total Expenses</td><td>R${totalExpenses.toFixed(2)}</td></tr>
-              <tr><td>Profit</td><td>R${profit.toFixed(2)}</td></tr>
-            </table>
-          `;
-        } catch (error) {
-          console.error('Error generating report:', error);
-          alert('Error generating report: ' + error.message);
+        if (period === 'daily') {
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+        } else if (period === 'weekly') {
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+          endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() + 7);
+        } else if (period === 'monthly') {
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          endDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
         }
+
+        sales = sales.filter(sale => {
+          const saleDate = new Date(sale.date);
+          return saleDate >= startDate && saleDate < endDate;
+        });
+
+        expenses = expenses.filter(expense => {
+          const expenseDate = new Date(expense.date);
+          return expenseDate >= startDate && expenseDate < endDate;
+        });
+
+        const totalSales = sales.reduce((sum, sale) => sum + sale.amount, 0);
+        const totalCosts = sales.reduce((sum, sale) => sum + sale.cost, 0);
+        const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+        const profit = totalSales - totalCosts - totalExpenses;
+
+        document.getElementById('reportOutput').innerHTML = `
+          <h4>${period.charAt(0).toUpperCase() + period.slice(1)} Report</h4>
+          <table>
+            <tr><th>Metric</th><th>Amount</th></tr>
+            <tr><td>Total Sales</td><td>R${totalSales.toFixed(2)}</td></tr>
+            <tr><td>Total Costs</td><td>R${totalCosts.toFixed(2)}</td></tr>
+            <tr><td>Total Expenses</td><td>R${totalExpenses.toFixed(2)}</td></tr>
+            <tr><td>Profit</td><td>R${profit.toFixed(2)}</td></tr>
+          </table>
+        `;
       }
     }
 
     async function estimateTax() {
-      console.log('Estimate Tax button clicked');
       const taxMonth = document.getElementById('taxMonth').value;
       const user = auth.currentUser;
       if (user && taxMonth) {
-        try {
-          console.log('Estimating tax for month:', taxMonth);
-          const [year, month] = taxMonth.split('-').map(Number);
-          const startDate = new Date(year, month - 1, 1);
-          const endDate = new Date(year, month, 1);
+        const [year, month] = taxMonth.split('-').map(Number);
+        const startDate = new Date(year, month - 1, 1);
+        const endDate = new Date(year, month, 1);
 
-          const salesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'sales'), firebase.firestore().where('userId', '==', user.uid)));
-          const expensesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'expenses'), firebase.firestore().where('userId', '==', user.uid)));
+        const salesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'sales'), firebase.firestore().where('userId', '==', user.uid)));
+        const expensesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'expenses'), firebase.firestore().where('userId', '==', user.uid)));
 
-          let sales = salesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          let expenses = expensesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        let sales = salesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        let expenses = expensesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-          sales = sales.filter(sale => {
-            const saleDate = new Date(sale.date);
-            return saleDate >= startDate && saleDate < endDate;
-          });
+        sales = sales.filter(sale => {
+          const saleDate = new Date(sale.date);
+          return saleDate >= startDate && saleDate < endDate;
+        });
 
-          expenses = expenses.filter(expense => {
-            const expenseDate = new Date(expense.date);
-            return expenseDate >= startDate && expenseDate < endDate;
-          });
+        expenses = expenses.filter(expense => {
+          const expenseDate = new Date(expense.date);
+          return expenseDate >= startDate && expenseDate < endDate;
+        });
 
-          const totalSales = sales.reduce((sum, sale) => sum + sale.amount, 0);
-          const totalCosts = sales.reduce((sum, sale) => sum + sale.cost, 0);
-          const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-          const taxableIncome = totalSales - totalCosts - totalExpenses;
+        const totalSales = sales.reduce((sum, sale) => sum + sale.amount, 0);
+        const totalCosts = sales.reduce((sum, sale) => sum + sale.cost, 0);
+        const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+        const taxableIncome = totalSales - totalCosts - totalExpenses;
 
-          const taxRate = 0.15; // Example: 15% flat rate for small businesses
-          const estimatedTax = taxableIncome * taxRate;
+        const taxRate = 0.15; // Example: 15% flat rate for small businesses
+        const estimatedTax = taxableIncome * taxRate;
 
-          console.log('Tax estimated:', { taxableIncome, estimatedTax });
-          document.getElementById('taxOutput').innerHTML = `
-            <h4>Tax Estimation for ${taxMonth}</h4>
-            <p>Taxable Income: R${taxableIncome.toFixed(2)}</p>
-            <p>Estimated Tax (15%): R${estimatedTax.toFixed(2)}</p>
-          `;
-        } catch (error) {
-          console.error('Error estimating tax:', error);
-          alert('Error estimating tax: ' + error.message);
-        }
+        document.getElementById('taxOutput').innerHTML = `
+          <h4>Tax Estimation for ${taxMonth}</h4>
+          <p>Taxable Income: R${taxableIncome.toFixed(2)}</p>
+          <p>Estimated Tax (15%): R${estimatedTax.toFixed(2)}</p>
+        `;
       } else {
-        console.warn('No tax month selected');
         alert('Please select a month.');
       }
     }
 
     async function exportToCSV() {
-      console.log('Export to CSV button clicked');
       const user = auth.currentUser;
       if (user) {
-        try {
-          console.log('Exporting data to CSV');
-          const salesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'sales'), firebase.firestore().where('userId', '==', user.uid)));
-          const expensesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'expenses'), firebase.firestore().where('userId', '==', user.uid)));
+        const salesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'sales'), firebase.firestore().where('userId', '==', user.uid)));
+        const expensesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'expenses'), firebase.firestore().where('userId', '==', user.uid)));
 
-          const sales = salesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          const expenses = expensesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const sales = salesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const expenses = expensesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-          const csvData = [
-            ['Type', 'Amount', 'Cost', 'Category', 'Date'],
-            ...sales.map(sale => ['Sale', sale.amount, sale.cost, '', sale.date]),
-            ...expenses.map(expense => ['Expense', expense.amount, '', expense.category, expense.date])
-          ];
+        const csvData = [
+          ['Type', 'Amount', 'Cost', 'Category', 'Date'],
+          ...sales.map(sale => ['Sale', sale.amount, sale.cost, '', sale.date]),
+          ...expenses.map(expense => ['Expense', expense.amount, '', expense.category, expense.date])
+        ];
 
-          const csvContent = csvData.map(row => row.join(';')).join('\n');
-          const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.setAttribute('href', url);
-          link.setAttribute('download', 'business_data.csv');
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          console.log('CSV exported successfully');
-        } catch (error) {
-          console.error('Error exporting CSV:', error);
-          alert('Error exporting CSV: ' + error.message);
-        }
+        const csvContent = csvData.map(row => row.join(';')).join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'business_data.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       }
     }
 
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(registrations => {
-        for (let reg of registrations) {
-          reg.unregister().then(() => {
-            console.log('Service Worker unregistered');
-          });
-        }
-      });
       window.addEventListener('load', () => {
-        console.log('Registering Service Worker');
-        navigator.serviceWorker.register('/sw.js').then(reg => {
-          console.log('Service Worker registered:', reg.scope);
-        }).catch(error => {
-          console.error('Service Worker registration failed:', error);
-        });
+        navigator.serviceWorker.register('/sw.js')
+          .then(registration => {
+            console.log('Service Worker registered with scope:', registration.scope);
+          })
+          .catch(error => {
+            console.error('Service Worker registration failed:', error);
+          });
       });
     }
   </script>
