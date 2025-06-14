@@ -1,673 +1,451 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Business & Financial Tracker</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="manifest" href="/manifest.json">
-    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192x192.png">
-    <link rel="apple-touch-icon" sizes="512x512" href="/icon-512x512.png">
-    <meta name="theme-color" content="#4B5563">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Business & Financial Tracker</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" href="/icon-192x192.png">
+  <link rel="apple-touch-icon" href="/icon-512x512.png">
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f3f4f6; }
+    .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    h2, h3 { color: #1f2937; }
+    input, button, select { margin: 10px 0; padding: 8px; width: calc(100% - 18px); border: 1px solid #d1d5db; border-radius: 4px; }
+    button { background-color: #4b5563; color: white; cursor: pointer; }
+    button:hover { background-color: #374151; }
+    .hidden { display: none; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; }
+    th { background-color: #f9fafb; }
+  </style>
 </head>
-<body class="bg-gray-100 p-4">
-    <!-- Authentication Section -->
-    <div id="auth-section" class="max-w-md mx-auto bg-white p-6 rounded shadow">
-        <h1 class="text-2xl font-bold mb-4 text-center">Business & Financial Tracker</h1>
-        <div class="space-y-4">
-            <button id="show-sign-in" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Sign In</button>
-            <button id="show-register" class="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600">Register</button>
-        </div>
-    </div>
+<body>
+  <div class="container">
+    <section id="auth" class="hidden">
+      <h2>Sign In</h2>
+      <form id="signInForm">
+        <input type="email" id="signInEmail" placeholder="Email" required><br>
+        <input type="password" id="signInPassword" placeholder="Password" required><br>
+        <button type="submit">Sign In</button>
+      </form>
+      <p>Don't have an account? <a href="#" id="showRegister">Register</a></p>
+    </section>
 
-    <!-- Sign In Form -->
-    <div id="sign-in-form" class="hidden max-w-md mx-auto bg-white p-6 rounded shadow">
-        <h2 class="text-xl font-bold mb-4">Sign In</h2>
-        <form id="sign-in-form-element">
-            <input type="email" id="sign-in-email" placeholder="Email" class="border p-2 mb-2 w-full rounded" required>
-            <input type="password" id="sign-in-password" placeholder="Password" class="border p-2 mb-2 w-full rounded" required>
-            <button type="submit" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Sign In</button>
-        </form>
-        <button id="back-to-auth-from-sign-in" class="w-full bg-gray-500 text-white p-2 rounded mt-2 hover:bg-gray-600">Back</button>
-    </div>
+    <section id="register" class="hidden">
+      <h2>Register</h2>
+      <form id="registerForm">
+        <input type="email" id="registerEmail" placeholder="Email" required><br>
+        <input type="password" id="registerPassword" placeholder="Password" required><br>
+        <button type="submit">Register</button>
+      </form>
+      <p>Already have an account? <a href="#" id="showSignIn">Sign In</a></p>
+    </section>
 
-    <!-- Register Form -->
-    <div id="register-form" class="hidden max-w-md mx-auto bg-white p-6 rounded shadow">
-        <h2 class="text-xl font-bold mb-4">Register</h2>
-        <form id="register-form-element">
-            <input type="text" id="register-name" placeholder="Name" class="border p-2 mb-2 w-full rounded" required>
-            <input type="text" id="register-surname" placeholder="Surname" class="border p-2 mb-2 w-full rounded" required>
-            <input type="email" id="register-email" placeholder="Email" class="border p-2 mb-2 w-full rounded" required>
-            <div class="flex mb-2">
-                <span class="border p-2 rounded-l bg-gray-200">+27</span>
-                <input type="tel" id="register-phone" placeholder="Phone Number (e.g., 812345678)" class="border p-2 rounded-r w-full" pattern="[0-9]{9}" required>
-            </div>
-            <input type="password" id="register-password" placeholder="Password" class="border p-2 mb-2 w-full rounded" required>
-            <button type="submit" class="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600">Register</button>
-        </form>
-        <button id="back-to-auth-from-register" class="w-full bg-gray-500 text-white p-2 rounded mt-2 hover:bg-gray-600">Back</button>
-    </div>
+    <section id="businessRegistration" class="hidden">
+      <h2>Register Your Business</h2>
+      <form id="businessForm">
+        <input type="text" id="ownerName" placeholder="Owner Name" required><br>
+        <input type="text" id="ownerId" placeholder="Owner ID Number" required><br>
+        <input type="text" id="physicalAddress" placeholder="Physical Address" required><br>
+        <input type="text" id="postalAddress" placeholder="Postal Address" required><br>
+        <input type="text" id="googleMapsUrl" placeholder="Google Maps URL (e.g., https://www.google.com/maps/place/...)"><br>
+        <button type="button" onclick="getCurrentLocation()">Send Your Location</button><br>
+        <button type="submit">Register Business</button>
+      </form>
+    </section>
 
-    <!-- Main Menu -->
-    <div id="main-menu" class="hidden max-w-md mx-auto bg-white p-6 rounded shadow">
-        <h2 class="text-xl font-bold mb-4">Main Menu</h2>
-        <div class="space-y-4">
-            <button id="register-business" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Register Business</button>
-            <button id="track-sales" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Track Sales</button>
-            <button id="reports" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Reports</button>
-            <button id="tax-estimation" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Tax Estimation</button>
-            <button id="apply-funding" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Apply for Funding</button>
-            <button id="export-data" class="w-full bg-purple-500 text-white p-2 rounded hover:bg-purple-600">Export Data</button>
-            <button id="sign-out" class="w-full bg-red-500 text-white p-2 rounded hover:bg-red-600">Sign Out</button>
-        </div>
-    </div>
+    <section id="dashboard" class="hidden">
+      <h2>Dashboard</h2>
+      <button onclick="signOut()">Sign Out</button>
+      <h3>Business Details</h3>
+      <div id="businessDetails"></div>
+      <div id="businessMap" style="margin-top: 20px;">
+        <iframe id="mapIframe" width="100%" height="300" frameborder="0" style="border:0" allowfullscreen></iframe>
+      </div>
+      <h3>Track Sales and Expenses</h3>
+      <form id="salesForm">
+        <input type="number" id="saleAmount" placeholder="Sale Amount" required step="0.01"><br>
+        <input type="number" id="saleCost" placeholder="Cost of Sale" required step="0.01"><br>
+        <input type="date" id="saleDate" required><br>
+        <button type="submit">Add Sale</button>
+      </form>
+      <form id="expensesForm">
+        <input type="number" id="expenseAmount" placeholder="Expense Amount" required step="0.01"><br>
+        <input type="text" id="expenseCategory" placeholder="Category (e.g., Utilities)" required><br>
+        <input type="date" id="expenseDate" required><br>
+        <button type="submit">Add Expense</button>
+      </form>
+      <h3>Reports</h3>
+      <select id="reportPeriod">
+        <option value="daily">Daily</option>
+        <option value="weekly">Weekly</option>
+        <option value="monthly">Monthly</option>
+      </select>
+      <button onclick="generateReport()">Generate Report</button>
+      <div id="reportOutput"></div>
+      <h3>Tax Estimation</h3>
+      <input type="month" id="taxMonth" required>
+      <button onclick="estimateTax()">Estimate Tax</button>
+      <div id="taxOutput"></div>
+      <h3>Export Data</h3>
+      <button onclick="exportToCSV()">Export to CSV</button>
+      <h3>Funding</h3>
+      <p>Funding application feature coming soon.</p>
+    </section>
+  </div>
 
-    <!-- Business Registration Form -->
-    <div id="business-form" class="hidden max-w-md mx-auto bg-white p-6 rounded shadow">
-        <h2 class="text-xl font-bold mb-4">Register Business</h2>
-        <form id="business-registration-form">
-            <input type="text" id="owner-name" placeholder="Owner’s Name & Surname" class="border p-2 mb-2 w-full rounded" required>
-            <input type="text" id="id-passport" placeholder="ID/Passport Number" class="border p-2 mb-2 w-full rounded" required>
-            <input type="text" id="residential-address" placeholder="Residential Address" class="border p-2 mb-2 w-full rounded" required>
-            <input type="text" id="business-name" placeholder="Business Name" class="border p-2 mb-2 w-full rounded" required>
-            <input type="text" id="business-address" placeholder="Business Address" class="border p-2 mb-2 w-full rounded" required>
-            <div class="mb-2">
-                <button type="button" id="share-location" class="bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Send Your Location</button>
-                <input type="url" id="location-url" placeholder="Google Maps URL (e.g., https://www.google.com/maps?q=-33.9249,18.4241)" class="border p-2 mt-2 w-full rounded">
-                <p class="text-sm text-gray-500 mt-1">Click 'Send Your Location' or enter a Google Maps URL manually.</p>
-            </div>
-            <p class="text-sm text-gray-500 mb-2">File uploads (ID, Proof of Address, Affidavit) are disabled due to Storage limitations.</p>
-            <button type="submit" class="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600">Submit</button>
-        </form>
-        <button id="back-to-menu-from-business" class="w-full bg-gray-500 text-white p-2 rounded mt-2 hover:bg-gray-600">Back</button>
-    </div>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBjop9idbdOohdUtDvztaPmlLk-w4Xiy3c",
+      authDomain: "nathibiz.firebaseapp.com",
+      projectId: "nathibiz",
+      storageBucket: "nathibiz.appspot.com",
+      messagingSenderId: "585170233799",
+      appId: "1:585170233799:web:e79c3b9f334d23343b91e2"
+    };
 
-    <!-- Sales Tracking Form -->
-    <div id="sales-form" class="hidden max-w-md mx-auto bg-white p-6 rounded shadow">
-        <h2 class="text-xl font-bold mb-4">Track Sales</h2>
-        <form id="sales-tracking-form">
-            <input type="number" id="sale-amount" placeholder="Sale Amount" step="0.01" class="border p-2 mb-2 w-full rounded" required>
-            <input type="number" id="cost-of-sales" placeholder="Cost of Sales" step="0.01" class="border p-2 mb-2 w-full rounded" required>
-            <input type="date" id="sale-date" class="border p-2 mb-2 w-full rounded" required>
-            <div id="expense-list" class="mb-4"></div>
-            <button type="button" id="add-expense" class="bg-blue-500 text-white p-2 rounded mb-2 hover:bg-blue-600">Add Expense</button>
-            <button type="submit" class="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600">Submit</button>
-        </form>
-        <button id="back-to-menu-from-sales" class="w-full bg-gray-500 text-white p-2 rounded mt-2 hover:bg-gray-600">Back</button>
-    </div>
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
 
-    <!-- Reports Section -->
-    <div id="reports-section" class="hidden max-w-md mx-auto bg-white p-6 rounded shadow">
-        <h2 class="text-xl font-bold mb-4">Reports</h2>
-        <select id="report-type" class="border p-2 mb-2 w-full rounded">
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-        </select>
-        <input type="date" id="report-date" class="border p-2 mb-2 w-full rounded" required>
-        <button id="generate-report" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Generate Report</button>
-        <div id="report-output" class="mt-4"></div>
-        <button id="back-to-menu-from-reports" class="w-full bg-gray-500 text-white p-2 rounded mt-2 hover:bg-gray-600">Back</button>
-    </div>
+    function showSection(sectionId) {
+      document.querySelectorAll('section').forEach(section => section.classList.add('hidden'));
+      document.getElementById(sectionId).classList.remove('hidden');
+      if (sectionId === 'dashboard') {
+        loadBusinessDetails();
+        loadSalesAndExpenses();
+      }
+    }
 
-    <!-- Tax Estimation Section -->
-    <div id="tax-estimation-section" class="hidden max-w-md mx-auto bg-white p-6 rounded shadow">
-        <h2 class="text-xl font-bold mb-4">Tax Estimation</h2>
-        <input type="month" id="tax-year" class="border p-2 mb-2 w-full rounded" required>
-        <button id="estimate-tax" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Estimate Tax</button>
-        <div id="tax-output" class="mt-4"></div>
-        <button id="back-to-menu-from-tax" class="w-full bg-gray-500 text-white p-2 rounded mt-2 hover:bg-gray-600">Back</button>
-    </div>
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        showSection('dashboard');
+      } else {
+        showSection('auth');
+      }
+    });
 
-    <!-- Funding Section (Placeholder) -->
-    <div id="funding-section" class="hidden max-w-md mx-auto bg-white p-6 rounded shadow">
-        <h2 class="text-xl font-bold mb-4">Apply for Funding</h2>
-        <p class="mb-4">Funding application form coming soon!</p>
-        <button id="back-to-menu-from-funding" class="w-full bg-gray-500 text-white p-2 rounded hover:bg-gray-600">Back</button>
-    </div>
+    document.getElementById('showRegister').addEventListener('click', () => showSection('register'));
+    document.getElementById('showSignIn').addEventListener('click', () => showSection('auth'));
 
-    <script type="module">
-        // Import Firebase SDKs (no Storage)
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
-        import { initializeFirestore, collection, addDoc, getDocs, query, where, Timestamp, memoryLocalCache } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
-        import { getAnalytics } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-analytics.js';
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
+    document.getElementById('signInForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('signInEmail').value;
+      const password = document.getElementById('signInPassword').value;
+      try {
+        await auth.signInWithEmailAndPassword(email, password);
+      } catch (error) {
+        alert('Error signing in: ' + error.message);
+      }
+    });
 
-        // Firebase Configuration for nathibiz
-        const firebaseConfig = {
-            apiKey: "AIzaSyBjop9idbdOohdUtDvztaPmlLk-w4Xiy3c",
-            authDomain: "nathibiz.firebaseapp.com",
-            projectId: "nathibiz",
-            storageBucket: "nathibiz.appspot.com",
-            messagingSenderId: "585170233799",
-            appId: "1:585170233799:web:e79c3b9f334d23343b91e2"
-        };
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('registerEmail').value;
+      const password = document.getElementById('registerPassword').value;
+      try {
+        await auth.createUserWithEmailAndPassword(email, password);
+        showSection('businessRegistration');
+      } catch (error) {
+        alert('Error registering: ' + error.message);
+      }
+    });
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = initializeFirestore(app, { cache: memoryLocalCache() });
-        const analytics = getAnalytics(app);
-        const auth = getAuth(app);
+    function signOut() {
+      auth.signOut();
+    }
 
-        // DOM Elements
-        const authSection = document.getElementById('auth-section');
-        const signInForm = document.getElementById('sign-in-form');
-        const registerForm = document.getElementById('register-form');
-        const mainMenu = document.getElementById('main-menu');
-        const businessForm = document.getElementById('business-form');
-        const salesForm = document.getElementById('sales-form');
-        const reportsSection = document.getElementById('reports-section');
-        const taxEstimationSection = document.getElementById('tax-estimation-section');
-        const fundingSection = document.getElementById('funding-section');
-        const expenseList = document.getElementById('expense-list');
+    // Validate and convert Google Maps URL to embeddable format
+    function getEmbedUrl(googleMapsUrl) {
+      if (!googleMapsUrl) return '';
+      // Handle place or search URLs
+      const placeMatch = googleMapsUrl.match(/place\/([^/]+)\/@([-.\d]+),([-.\d]+)/);
+      if (placeMatch) {
+        const place = encodeURIComponent(placeMatch[1]);
+        const lat = placeMatch[2];
+        const lng = placeMatch[3];
+        return `https://www.google.com/maps/embed/v1/place?q=${place}&center=${lat},${lng}&zoom=15`;
+      }
+      // Handle coordinate-based URLs
+      const coordMatch = googleMapsUrl.match(/q=([-.\d]+),([-.\d]+)/);
+      if (coordMatch) {
+        const lat = coordMatch[1];
+        const lng = coordMatch[2];
+        return `https://www.google.com/maps/embed/v1/place?q=${lat},${lng}&center=${lat},${lng}&zoom=15`;
+      }
+      // Handle direct embed URLs
+      if (googleMapsUrl.includes('embed')) {
+        return googleMapsUrl;
+      }
+      return ''; // Invalid URL
+    }
 
-        // Authentication State Listener
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                authSection.classList.add('hidden');
-                signInForm.classList.add('hidden');
-                registerForm.classList.add('hidden');
-                mainMenu.classList.remove('hidden');
-            } else {
-                authSection.classList.remove('hidden');
-                mainMenu.classList.add('hidden');
-                businessForm.classList.add('hidden');
-                salesForm.classList.add('hidden');
-                reportsSection.classList.add('hidden');
-                taxEstimationSection.classList.add('hidden');
-                fundingSection.classList.add('hidden');
-            }
+    // Get current location and generate Google Maps URL
+    function getCurrentLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+            document.getElementById('googleMapsUrl').value = mapsUrl;
+            alert('Location set in Google Maps URL field.');
+          },
+          (error) => {
+            alert('Error getting location: ' + error.message + '. Please paste a Google Maps URL manually.');
+          }
+        );
+      } else {
+        alert('Geolocation is not supported by your browser. Please paste a Google Maps URL.');
+      }
+    }
+
+    // Business form submission
+    document.getElementById('businessForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const ownerName = document.getElementById('ownerName').value;
+      const ownerId = document.getElementById('ownerId').value;
+      const physicalAddress = document.getElementById('physicalAddress').value;
+      const postalAddress = document.getElementById('postalAddress').value;
+      let googleMapsUrl = document.getElementById('googleMapsUrl').value;
+      const user = auth.currentUser;
+
+      // Validate Google Maps URL
+      const embedUrl = getEmbedUrl(googleMapsUrl);
+      if (googleMapsUrl && !embedUrl) {
+        alert('Invalid Google Maps URL. Please use a place URL (e.g., https://www.google.com/maps/place/...) or coordinates (e.g., https://www.google.com/maps?q=-33.9249,18.4241).');
+        return;
+      }
+
+      if (user) {
+        await firebase.firestore().setDoc(firebase.firestore().doc(db, 'businesses', user.uid), {
+          ownerName,
+          ownerId,
+          physicalAddress,
+          postalAddress,
+          googleMapsUrl,
+          embedUrl,
+          userId: user.uid
         });
+        alert('Business registered successfully!');
+        showSection('dashboard');
+      } else {
+        alert('Please sign in to register a business.');
+      }
+    });
 
-        // Show Sign In Form
-        document.getElementById('show-sign-in').addEventListener('click', () => {
-            authSection.classList.add('hidden');
-            signInForm.classList.remove('hidden');
+    async function loadBusinessDetails() {
+      const user = auth.currentUser;
+      if (user) {
+        const businessDoc = await firebase.firestore().getDoc(firebase.firestore().doc(db, 'businesses', user.uid));
+        if (businessDoc.exists()) {
+          const data = businessDoc.data();
+          document.getElementById('businessDetails').innerHTML = `
+            <p><strong>Owner:</strong> ${data.ownerName}</p>
+            <p><strong>ID:</strong> ${data.ownerId}</p>
+            <p><strong>Physical Address:</strong> ${data.physicalAddress}</p>
+            <p><strong>Postal Address:</strong> ${data.postalAddress}</p>
+            <p><strong>Location:</strong> <a href="${data.googleMapsUrl}" target="_blank">${data.googleMapsUrl || 'Not set'}</a></p>
+          `;
+          const mapIframe = document.getElementById('mapIframe');
+          if (data.embedUrl) {
+            mapIframe.src = data.embedUrl;
+            mapIframe.style.display = 'block';
+          } else {
+            mapIframe.style.display = 'none';
+          }
+        } else {
+          showSection('businessRegistration');
+        }
+      }
+    }
+
+    document.getElementById('salesForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const amount = parseFloat(document.getElementById('saleAmount').value);
+      const cost = parseFloat(document.getElementById('saleCost').value);
+      const date = document.getElementById('saleDate').value;
+      const user = auth.currentUser;
+
+      if (user) {
+        await firebase.firestore().addDoc(firebase.firestore().collection(db, 'sales'), {
+          amount,
+          cost,
+          date,
+          userId: user.uid,
+          type: 'sale'
         });
+        alert('Sale added successfully!');
+        document.getElementById('salesForm').reset();
+        loadSalesAndExpenses();
+      }
+    });
 
-        // Show Register Form
-        document.getElementById('show-register').addEventListener('click', () => {
-            authSection.classList.add('hidden');
-            registerForm.classList.remove('hidden');
+    document.getElementById('expensesForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const amount = parseFloat(document.getElementById('expenseAmount').value);
+      const category = document.getElementById('expenseCategory').value;
+      const date = document.getElementById('expenseDate').value;
+      const user = auth.currentUser;
+
+      if (user) {
+        await firebase.firestore().addDoc(firebase.firestore().collection(db, 'expenses'), {
+          amount,
+          category,
+          date,
+          userId: user.uid,
+          type: 'expense'
         });
+        alert('Expense added successfully!');
+        document.getElementById('expensesForm').reset();
+        loadSalesAndExpenses();
+      }
+    });
 
-        // Back to Auth Section
-        document.getElementById('back-to-auth-from-sign-in').addEventListener('click', () => {
-            signInForm.classList.add('hidden');
-            authSection.classList.remove('hidden');
-        });
+    async function loadSalesAndExpenses() {
+      const user = auth.currentUser;
+      if (user) {
+        const salesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'sales'), firebase.firestore().where('userId', '==', user.uid)));
+        const expensesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'expenses'), firebase.firestore().where('userId', '==', user.uid)));
+        // Implement display logic if needed
+      }
+    }
 
-        document.getElementById('back-to-auth-from-register').addEventListener('click', () => {
-            registerForm.classList.add('hidden');
-            authSection.classList.remove('hidden');
-        });
+    async function generateReport() {
+      const period = document.getElementById('reportPeriod').value;
+      const user = auth.currentUser;
+      if (user) {
+        const salesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'sales'), firebase.firestore().where('userId', '==', user.uid)));
+        const expensesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'expenses'), firebase.firestore().where('userId', '==', user.uid)));
+        let sales = salesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        let expenses = expensesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        // Register User
-        document.getElementById('register-form-element').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const name = document.getElementById('register-name').value;
-            const surname = document.getElementById('register-surname').value;
-            const email = document.getElementById('register-email').value;
-            const phone = `+27${document.getElementById('register-phone').value}`;
-            const password = document.getElementById('register-password').value;
+        const now = new Date();
+        let startDate, endDate;
 
-            try {
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                await addDoc(collection(db, 'users'), {
-                    uid: userCredential.user.uid,
-                    name,
-                    surname,
-                    email,
-                    phone,
-                    timestamp: Timestamp.now()
-                });
-                alert('Registration successful! You are now signed in.');
-                document.getElementById('register-form-element').reset();
-            } catch (error) {
-                console.error('Registration error:', error.code, error.message);
-                alert(`Error registering: ${error.message}`);
-            }
-        });
-
-        // Sign In User
-        document.getElementById('sign-in-form-element').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('sign-in-email').value;
-            const password = document.getElementById('sign-in-password').value;
-
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-                alert('Signed in successfully!');
-                document.getElementById('sign-in-form-element').reset();
-            } catch (error) {
-                console.error('Sign in error:', error.code, error.message);
-                alert(`Error signing in: ${error.message}`);
-            }
-        });
-
-        // Sign Out
-        document.getElementById('sign-out').addEventListener('click', async () => {
-            try {
-                await signOut(auth);
-                alert('Signed out successfully!');
-            } catch (error) {
-                console.error('Sign out error:', error.code, error.message);
-                alert('Error signing out.');
-            }
-        });
-
-        // Main Menu Navigation
-        document.getElementById('register-business').addEventListener('click', () => {
-            mainMenu.classList.add('hidden');
-            businessForm.classList.remove('hidden');
-        });
-
-        document.getElementById('track-sales').addEventListener('click', () => {
-            mainMenu.classList.add('hidden');
-            salesForm.classList.remove('hidden');
-            if (!expenseList.hasChildNodes()) {
-                addExpenseField();
-            }
-        });
-
-        document.getElementById('reports').addEventListener('click', () => {
-            mainMenu.classList.add('hidden');
-            reportsSection.classList.remove('hidden');
-        });
-
-        document.getElementById('tax-estimation').addEventListener('click', () => {
-            mainMenu.classList.add('hidden');
-            taxEstimationSection.classList.remove('hidden');
-        });
-
-        document.getElementById('apply-funding').addEventListener('click', () => {
-            mainMenu.classList.add('hidden');
-            fundingSection.classList.remove('hidden');
-        });
-
-        document.querySelectorAll('[id^="back-to-menu"]').forEach(button => {
-            button.addEventListener('click', () => {
-                businessForm.classList.add('hidden');
-                salesForm.classList.add('hidden');
-                reportsSection.classList.add('hidden');
-                taxEstimationSection.classList.add('hidden');
-                fundingSection.classList.add('hidden');
-                mainMenu.classList.remove('hidden');
-            });
-        });
-
-        // Location Sharing
-        document.getElementById('share-location').addEventListener('click', () => {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    position => {
-                        const { latitude, longitude } = position.coords;
-                        const mapsUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
-                        document.getElementById('location-url').value = mapsUrl;
-                        alert('Location shared successfully!');
-                    },
-                    error => {
-                        let errorMessage = 'Unable to access location. Please enter a Google Maps URL manually.';
-                        switch (error.code) {
-                            case error.PERMISSION_DENIED:
-                                errorMessage = 'Location access denied. Please allow location access or enter a Google Maps URL manually.';
-                                break;
-                            case error.POSITION_UNAVAILABLE:
-                                errorMessage = 'Location unavailable. Please try again or enter a Google Maps URL manually.';
-                                break;
-                            case error.TIMEOUT:
-                                errorMessage = 'Location request timed out. Please try again or enter a Google Maps URL manually.';
-                                break;
-                        }
-                        alert(errorMessage);
-                    }
-                );
-            } else {
-                alert('Geolocation not supported. Please enter a Google Maps URL manually.');
-            }
-        });
-
-        // Add Expense Field
-        function addExpenseField() {
-            const expenseEntry = document.createElement('div');
-            expenseEntry.className = 'flex space-x-2 items-center mb-2';
-            expenseEntry.innerHTML = `
-                <input type="number" name="expense-amount" placeholder="Expense Amount" step="0.01" class="border p-2 rounded flex-1" required>
-                <select name="expense-category" class="border p-2 rounded flex-1" required>
-                    <option value="">Select Category</option>
-                    <option value="Rent">Rent</option>
-                    <option value="Water & Electricity">Water & Electricity</option>
-                    <option value="Airtime & Data">Airtime & Data</option>
-                    <option value="Transport/Fuel">Transport/Fuel</option>
-                    <option value="Salaries/Wages">Salaries/Wages</option>
-                    <option value="Marketing">Marketing</option>
-                    <option value="Supplies">Supplies</option>
-                    <option value="Other">Other</option>
-                </select>
-                <button type="button" class="remove-expense bg-red-500 text-white p-2 rounded">Remove</button>
-            `;
-            expenseList.appendChild(expenseEntry);
-
-            expenseEntry.querySelector('.remove-expense').addEventListener('click', () => {
-                if (expenseList.childElementCount > 1) {
-                    expenseEntry.remove();
-                } else {
-                    alert('At least one expense field is required.');
-                }
-            });
+        if (period === 'daily') {
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+        } else if (period === 'weekly') {
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+          endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() + 7);
+        } else if (period === 'monthly') {
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          endDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
         }
 
-        document.getElementById('add-expense').addEventListener('click', addExpenseField);
-
-        // Business Registration (No File Uploads)
-        document.getElementById('business-registration-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const businessData = {
-                ownerName: document.getElementById('owner-name').value,
-                idPassport: document.getElementById('id-passport').value,
-                residentialAddress: document.getElementById('residential-address').value,
-                businessName: document.getElementById('business-name').value,
-                businessAddress: document.getElementById('business-address').value,
-                locationUrl: document.getElementById('location-url').value,
-                timestamp: Timestamp.now(),
-                uid: auth.currentUser.uid
-            };
-
-            try {
-                await addDoc(collection(db, 'registrations'), businessData);
-                alert('Business registration submitted successfully!');
-                document.getElementById('business-registration-form').reset();
-                businessForm.classList.add('hidden');
-                mainMenu.classList.remove('hidden');
-            } catch (error) {
-                console.error('Error registering business:', error.code, error.message);
-                alert(`Error registering business: ${error.message}`);
-            }
+        sales = sales.filter(sale => {
+          const saleDate = new Date(sale.date);
+          return saleDate >= startDate && saleDate < endDate;
         });
 
-        // Sales Tracking
-        document.getElementById('sales-tracking-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const saleData = {
-                amount: parseFloat(document.getElementById('sale-amount').value),
-                costOfSales: parseFloat(document.getElementById('cost-of-sales').value),
-                date: document.getElementById('sale-date').value,
-                timestamp: Timestamp.now(),
-                uid: auth.currentUser.uid
-            };
-
-            const expenses = [];
-            const expenseEntries = expenseList.querySelectorAll('div');
-            for (const entry of expenseEntries) {
-                const amount = parseFloat(entry.querySelector('[name="expense-amount"]').value);
-                const category = entry.querySelector('[name="expense-category"]').value;
-                if (amount > 0 && category) {
-                    expenses.push({
-                        amount,
-                        category,
-                        date: saleData.date,
-                        timestamp: Timestamp.now(),
-                        uid: auth.currentUser.uid
-                    });
-                }
-            }
-
-            try {
-                await addDoc(collection(db, 'sales'), saleData);
-                for (const expense of expenses) {
-                    await addDoc(collection(db, 'expenses'), expense);
-                }
-                alert('Sales and expenses saved successfully!');
-                document.getElementById('sales-tracking-form').reset();
-                expenseList.innerHTML = '';
-                addExpenseField();
-                salesForm.classList.add('hidden');
-                mainMenu.classList.remove('hidden');
-            } catch (error) {
-                console.error('Error saving data:', error.code, error.message);
-                alert(`Error saving data: ${error.message}`);
-            }
+        expenses = expenses.filter(expense => {
+          const expenseDate = new Date(expense.date);
+          return expenseDate >= startDate && expenseDate < endDate;
         });
 
-        // Reports
-        document.getElementById('generate-report').addEventListener('click', async () => {
-            const reportType = document.getElementById('report-type').value;
-            const reportDate = document.getElementById('report-date').value;
-            if (!reportDate) {
-                alert('Please select a date for the report.');
-                return;
-            }
+        const totalSales = sales.reduce((sum, sale) => sum + sale.amount, 0);
+        const totalCosts = sales.reduce((sum, sale) => sum + sale.cost, 0);
+        const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+        const profit = totalSales - totalCosts - totalExpenses;
 
-            let startDate, endDate;
-            const selectedDate = new Date(reportDate);
-            if (reportType === 'daily') {
-                startDate = new Date(selectedDate.setHours(0, 0, 0, 0));
-                endDate = new Date(selectedDate.setHours(23, 59, 59, 999));
-            } else if (reportType === 'weekly') {
-                startDate = new Date(selectedDate.setDate(selectedDate.getDate() - selectedDate.getDay()));
-                startDate.setHours(0, 0, 0, 0);
-                endDate = new Date(startDate);
-                endDate.setDate(startDate.getDate() + 6);
-                endDate.setHours(23, 59, 59, 999);
-            } else if (reportType === 'monthly') {
-                startDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
-                endDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0);
-                endDate.setHours(23, 59, 59, 999);
-            }
+        document.getElementById('reportOutput').innerHTML = `
+          <h4>${period.charAt(0).toUpperCase() + period.slice(1)} Report</h4>
+          <table>
+            <tr><th>Metric</th><th>Amount</th></tr>
+            <tr><td>Total Sales</td><td>R${totalSales.toFixed(2)}</td></tr>
+            <tr><td>Total Costs</td><td>R${totalCosts.toFixed(2)}</td></tr>
+            <tr><td>Total Expenses</td><td>R${totalExpenses.toFixed(2)}</td></tr>
+            <tr><td>Profit</td><td>R${profit.toFixed(2)}</td></tr>
+          </table>
+        `;
+      }
+    }
 
-            try {
-                let salesQuery = query(
-                    collection(db, 'sales'),
-                    where('timestamp', '>=', Timestamp.fromDate(startDate)),
-                    where('timestamp', '<=', Timestamp.fromDate(endDate))
-                );
-                let expensesQuery = query(
-                    collection(db, 'expenses'),
-                    where('timestamp', '>=', Timestamp.fromDate(startDate)),
-                    where('timestamp', '<=', Timestamp.fromDate(endDate))
-                );
+    async function estimateTax() {
+      const taxMonth = document.getElementById('taxMonth').value;
+      const user = auth.currentUser;
+      if (user && taxMonth) {
+        const [year, month] = taxMonth.split('-').map(Number);
+        const startDate = new Date(year, month - 1, 1);
+        const endDate = new Date(year, month, 1);
 
-                const salesSnapshot = await getDocs(salesQuery);
-                const expensesSnapshot = await getDocs(expensesQuery);
+        const salesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'sales'), firebase.firestore().where('userId', '==', user.uid)));
+        const expensesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'expenses'), firebase.firestore().where('userId', '==', user.uid)));
 
-                let totalSales = 0, totalCostOfSales = 0, totalExpenses = 0;
-                salesSnapshot.forEach(doc => {
-                    const data = doc.data();
-                    if (typeof data.amount === 'number') {
-                        totalSales += data.amount;
-                    }
-                    if (typeof data.costOfSales === 'number') {
-                        totalCostOfSales += data.costOfSales;
-                    }
-                });
+        let sales = salesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        let expenses = expensesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-                const expenseBreakdown = {};
-                expensesSnapshot.forEach(doc => {
-                    const data = doc.data();
-                    if (typeof data.amount === 'number' && data.category) {
-                        totalExpenses += data.amount;
-                        expenseBreakdown[data.category] = (expenseBreakdown[data.category] || 0) + data.amount;
-                    }
-                });
-
-                const income = totalSales - totalCostOfSales;
-                const profit = income - totalExpenses;
-
-                let outputHtml;
-                if (reportType === 'daily') {
-                    const expenseListHtml = Object.entries(expenseBreakdown).length > 0
-                        ? Object.entries(expenseBreakdown)
-                            .map(([category, amount]) => `<li>${category}: R${amount.toFixed(2)}</li>`)
-                            .join('')
-                        : '<li>No expenses recorded.</li>';
-                    outputHtml = `
-                        <div class="space-y-2">
-                            <p><span class="font-medium">Total Sales:</span> R${totalSales.toFixed(2)}</p>
-                            <p><span class="font-medium">Cost of Sales:</span> R${totalCostOfSales.toFixed(2)}</p>
-                            <p><span class="font-medium">Income:</span> R${income.toFixed(2)}</p>
-                            <div>
-                                <p class="font-medium">Expenses Breakdown:</p>
-                                <ul class="list-disc pl-5">${expenseListHtml}</ul>
-                                <p class="font-medium mt-2">Total Expenses: R${totalExpenses.toFixed(2)}</p>
-                            </div>
-                            <p><span class="font-medium">Profit:</span> R${profit.toFixed(2)}</p>
-                        </div>
-                    `;
-                } else {
-                    outputHtml = `
-                        <div class="space-y-2">
-                            <p>Total Sales: R${totalSales.toFixed(2)}</p>
-                            <p>Total Expenses: R${totalExpenses.toFixed(2)}</p>
-                            <p>Profit: R${profit.toFixed(2)}</p>
-                        </div>
-                    `;
-                }
-
-                document.getElementById('report-output').innerHTML = outputHtml;
-                alert('Report generated successfully!');
-            } catch (error) {
-                console.error('Error generating report:', error.code, error.message);
-                alert(`Error generating report: ${error.message}`);
-            }
+        sales = sales.filter(sale => {
+          const saleDate = new Date(sale.date);
+          return saleDate >= startDate && saleDate < endDate;
         });
 
-        // Tax Estimation
-        document.getElementById('estimate-tax').addEventListener('click', async () => {
-            const taxYear = document.getElementById('tax-year').value;
-            if (!taxYear) {
-                alert('Please select a month for tax estimation.');
-                return;
-            }
-
-            const [year, month] = taxYear.split('-').map(Number);
-            const startDate = new Date(year, month - 1, 1);
-            const endDate = new Date(year, month, 0);
-
-            try {
-                let salesQuery = query(
-                    collection(db, 'sales'),
-                    where('timestamp', '>=', Timestamp.fromDate(startDate)),
-                    where('timestamp', '<=', Timestamp.fromDate(endDate))
-                );
-                let expensesQuery = query(
-                    collection(db, 'expenses'),
-                    where('timestamp', '>=', Timestamp.fromDate(startDate)),
-                    where('timestamp', '<=', Timestamp.fromDate(endDate))
-                );
-
-                const salesSnapshot = await getDocs(salesQuery);
-                const expensesSnapshot = await getDocs(expensesQuery);
-
-                let totalSales = 0, totalExpenses = 0;
-                salesSnapshot.forEach(doc => {
-                    const data = doc.data();
-                    if (typeof data.amount === 'number') {
-                        totalSales += data.amount;
-                    }
-                });
-                expensesSnapshot.forEach(doc => {
-                    const data = doc.data();
-                    if (typeof data.amount === 'number') {
-                        totalExpenses += data.amount;
-                    }
-                });
-
-                const taxableIncome = totalSales - totalExpenses;
-                const taxRate = 0.18;
-                const estimatedTax = taxableIncome * taxRate;
-                document.getElementById('tax-output').innerHTML = `
-                    <p>Taxable Income: R${taxableIncome.toFixed(2)}</p>
-                    <p>Estimated Tax (18%): R${estimatedTax.toFixed(2)}</p>
-                `;
-                alert('Tax estimation generated successfully!');
-            } catch (error) {
-                console.error('Error estimating tax:', error.code, error.message);
-                alert(`Error estimating tax: ${error.message}`);
-            }
+        expenses = expenses.filter(expense => {
+          const expenseDate = new Date(expense.date);
+          return expenseDate >= startDate && expenseDate < endDate;
         });
 
-        // Export Data
-        document.getElementById('export-data').addEventListener('click', async () => {
-            try {
-                let salesQuery = collection(db, 'sales');
-                let expensesQuery = collection(db, 'expenses');
+        const totalSales = sales.reduce((sum, sale) => sum + sale.amount, 0);
+        const totalCosts = sales.reduce((sum, sale) => sum + sale.cost, 0);
+        const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+        const taxableIncome = totalSales - totalCosts - totalExpenses;
 
-                const salesSnapshot = await getDocs(salesQuery);
-                const expensesSnapshot = await getDocs(expensesQuery);
+        const taxRate = 0.15; // Example: 15% flat rate for small businesses
+        const estimatedTax = taxableIncome * taxRate;
 
-                const dataByDate = {};
+        document.getElementById('taxOutput').innerHTML = `
+          <h4>Tax Estimation for ${taxMonth}</h4>
+          <p>Taxable Income: R${taxableIncome.toFixed(2)}</p>
+          <p>Estimated Tax (15%): R${estimatedTax.toFixed(2)}</p>
+        `;
+      } else {
+        alert('Please select a month.');
+      }
+    }
 
-                salesSnapshot.forEach(doc => {
-                    const data = doc.data();
-                    const date = data.date || 'N/A';
-                    if (!dataByDate[date]) {
-                        dataByDate[date] = {
-                            sales: 0,
-                            costOfSales: 0,
-                            expenses: 0
-                        };
-                    }
-                    if (typeof data.amount === 'number') {
-                        dataByDate[date].sales += data.amount;
-                    }
-                    if (typeof data.costOfSales === 'number') {
-                        dataByDate[date].costOfSales += data.costOfSales;
-                    }
-                });
+    async function exportToCSV() {
+      const user = auth.currentUser;
+      if (user) {
+        const salesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'sales'), firebase.firestore().where('userId', '==', user.uid)));
+        const expensesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'expenses'), firebase.firestore().where('userId', '==', user.uid)));
 
-                expensesSnapshot.forEach(doc => {
-                    const data = doc.data();
-                    const date = data.date || 'N/A';
-                    if (!dataByDate[date]) {
-                        dataByDate[date] = {
-                            sales: 0,
-                            costOfSales: 0,
-                            expenses: 0
-                        };
-                    }
-                    if (typeof data.amount === 'number') {
-                        dataByDate[date].expenses += data.amount;
-                    }
-                });
+        const sales = salesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const expenses = expensesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-                let csv = '\uFEFF';
-                csv += 'Date;Sales;Cost of Sales;Income;Expenses;Profit\n';
-                for (const [date, values] of Object.entries(dataByDate)) {
-                    const income = values.sales - values.costOfSales;
-                    const profit = income - values.expenses;
-                    const escapedDate = `"${date.replace(/"/g, '""')}"`;
-                    csv += `${escapedDate};${values.sales.toFixed(2)};${values.costOfSales.toFixed(2)};${income.toFixed(2)};${values.expenses.toFixed(2)};${profit.toFixed(2)}\n`;
-                }
+        const csvData = [
+          ['Type', 'Amount', 'Cost', 'Category', 'Date'],
+          ...sales.map(sale => ['Sale', sale.amount, sale.cost, '', sale.date]),
+          ...expenses.map(expense => ['Expense', expense.amount, '', expense.category, expense.date])
+        ];
 
-                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'business_data.csv';
-                a.click();
-                window.URL.revokeObjectURL(url);
-                alert('Data exported successfully!');
-            } catch (error) {
-                console.error('Error exporting data:', error.code, error.message);
-                alert(`Error exporting data: ${error.message}`);
-            }
-        });
+        const csvContent = csvData.map(row => row.join(';')).join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'business_data.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    }
 
-        // Register Service Worker
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', async () => {
-                try {
-                    const response = await fetch('/sw.js');
-                    if (!response.ok) {
-                        throw new Error(`Service Worker file not found: ${response.status}`);
-                    }
-                    const registration = await navigator.serviceWorker.register('/sw.js');
-                    console.log('Service Worker registered with scope:', registration.scope);
-                } catch (error) {
-                    console.error('Service Worker registration failed:', error.message);
-                }
-            });
-        }
-    </script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(registration => {
+            console.log('Service Worker registered with scope:', registration.scope);
+          })
+          .catch(error => {
+            console.error('Service Worker registration failed:', error);
+          });
+      });
+    }
+  </script>
 </body>
 </html>
