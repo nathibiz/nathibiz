@@ -59,7 +59,12 @@
     <section id="businessRegistration" class="hidden">
       <h2>Register Your Business</h2>
       <form id="businessForm">
+        <input type="text" id="ownerName" placeholder="Owner Name" required><br>
+        <input type="text" id="ownerId" placeholder="ID/Passport Number" required><br>
+        <input type="tel" id="ownerContactNumber" placeholder="Contact Number (e.g., +27xxxxxxxxx)" required><br>
+        <input type="text" id="residentialAddress" placeholder="Residential Address" required><br>
         <input type="text" id="businessName" placeholder="Business Name" required><br>
+        <input type="tel" id="businessContactNumber" placeholder="Business Contact Number (e.g., +27xxxxxxxxx)" required><br>
         <select id="businessType" required>
           <option value="" disabled selected>Select Business Type</option>
           <option value="Spaza/Tuck shop">Spaza/Tuck shop</option>
@@ -73,13 +78,10 @@
           <option value="Other">Other</option>
         </select><br>
         <input type="text" id="businessTypeOther" placeholder="Specify Business Type" class="conditional"><br>
-        <input type="text" id="ownerName" placeholder="Owner Name" required><br>
-        <input type="text" id="ownerId" placeholder="ID/Passport Number" required><br>
-        <input type="tel" id="contactNumber" placeholder="Contact Number (e.g., +27xxxxxxxxx)" required><br>
-        <input type="text" id="physicalAddress" placeholder="Physical Address" required><br>
-        <input type="text" id="postalAddress" placeholder="Postal Address" required><br>
-        <input type="text" id="googleMapsUrl" placeholder="Google Maps URL (e.g., https://www.google.com/maps/place/...)"><br>
+        <input type="text" id="businessAddress" placeholder="Business Address" required><br>
+        <input type="text" id="googleMapsUrl" placeholder="Location for Business (Google Maps URL, e.g., https://www.google.com/maps/place/...)"><br>
         <button type="button" onclick="getCurrentLocation()">Send Your Location</button><br>
+        <input type="text" id="municipalityName" placeholder="Municipality Name" required><br>
         <input type="number" id="operationYears" placeholder="Years in Operation" min="0" required><br>
         <input type="number" id="operationMonths" placeholder="Months in Operation" min="0" max="11" required><br>
         <select id="hasBusinessAccount" required>
@@ -166,6 +168,7 @@
 
     auth.onAuthStateChanged(user => {
       if (user) {
+        console.log('Auth state changed: User signed in', user.uid);
         firebase.firestore().getDoc(firebase.firestore().doc(db, 'businesses', user.uid)).then(doc => {
           if (doc.exists()) {
             showSection('dashboard');
@@ -177,6 +180,7 @@
           alert('Error loading data: ' + error.message);
         });
       } else {
+        console.log('Auth state changed: No user signed in');
         showSection('auth');
       }
     });
@@ -184,7 +188,6 @@
     document.getElementById('showRegister').addEventListener('click', () => showSection('register'));
     document.getElementById('showSignIn').addEventListener('click', () => showSection('auth'));
 
-    // Toggle auth method
     function toggleAuthInputs(method, formType) {
       const emailInputs = document.querySelectorAll(`#${formType}Form .email-input`);
       const phoneInputs = document.querySelectorAll(`#${formType}Form .phone-input`);
@@ -198,26 +201,35 @@
     document.getElementById('signInForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const method = document.getElementById('signInMethod').value;
-      const password = document.getElementById('signInPassword').value;
+      const password = document.getElementById('signInPassword').value.trim();
 
       try {
+        console.log('Sign-in attempt with method:', method);
         if (method === 'email') {
-          const email = document.getElementById('signInEmail').value;
+          const email = document.getElementById('signInEmail').value.trim();
           if (!email) {
             alert('Please enter an email.');
             return;
           }
+          if (!/\S+@\S+\.\S+/.test(email)) {
+            alert('Please enter a valid email.');
+            return;
+          }
+          console.log('Attempting email sign-in:', email);
           await auth.signInWithEmailAndPassword(email, password);
           console.log('Signed in with email:', email);
         } else {
-          const phone = document.getElementById('signInPhone').value;
-          if (!/^\+?\d{10,15}$/.test(phone)) {
-            alert('Please enter a valid phone number (e.g., +27xxxxxxxxx).');
+          let phone = document.getElementById('signInPhone').value.trim();
+          phone = phone.replace(/\s/g, ''); // Remove spaces
+          if (!phone || !/^\+\d{10,15}$/.test(phone)) {
+            alert('Please enter a valid phone number starting with + (e.g., +27xxxxxxxxx).');
             return;
           }
+          console.log('Attempting phone sign-in:', phone);
           const phoneDoc = await firebase.firestore().getDoc(firebase.firestore().doc(db, 'phoneMappings', phone));
-          if (phoneDoc.exists()) {
+          if (phoneDoc.exists() && phoneDoc.data() && phoneDoc.data().email) {
             const linkedEmail = phoneDoc.data().email;
+            console.log('Found linked email:', linkedEmail);
             await auth.signInWithEmailAndPassword(linkedEmail, password);
             console.log('Signed in with phone-linked email:', linkedEmail);
           } else {
@@ -227,39 +239,51 @@
         }
       } catch (error) {
         console.error('Sign-in error:', error.code, error.message);
-        alert('Error signing in: ' + error.message);
+        alert('Error signing in: ' + (error.message || 'Unknown error'));
       }
     });
 
     document.getElementById('registerForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const method = document.getElementById('registerMethod').value;
-      const password = document.getElementById('registerPassword').value;
+      const password = document.getElementById('registerPassword').value.trim();
 
       try {
+        console.log('Registration attempt with method:', method);
         if (method === 'email') {
-          const email = document.getElementById('registerEmail').value;
+          const email = document.getElementById('registerEmail').value.trim();
           if (!email) {
             alert('Please enter an email.');
             return;
           }
+          if (!/\S+@\S+\.\S+/.test(email)) {
+            alert('Please enter a valid email.');
+            return;
+          }
+          console.log('Attempting email registration:', email);
           await auth.createUserWithEmailAndPassword(email, password);
           console.log('Registered with email:', email);
         } else {
-          const phone = document.getElementById('registerPhone').value;
-          if (!/^\+?\d{10,15}$/.test(phone)) {
-            alert('Please enter a valid phone number (e.g., +27xxxxxxxxx).');
+          let phone = document.getElementById('registerPhone').value.trim();
+          phone = phone.replace(/\s/g, ''); // Remove spaces
+          if (!phone || !/^\+\d{10,15}$/.test(phone)) {
+            alert('Please enter a valid phone number starting with + (e.g., +27xxxxxxxxx).');
             return;
           }
-          const appVerifier = new firebase.auth.RecaptchaVerifier('registerForm', {
-            'size': 'invisible'
-          });
+          console.log('Attempting phone registration:', phone);
+          const phoneDoc = await firebase.firestore().getDoc(firebase.firestore().doc(db, 'phoneMappings', phone));
+          if (phoneDoc.exists()) {
+            alert('Phone number already registered. Please sign in.');
+            return;
+          }
+          const appVerifier = new firebase.auth.RecaptchaVerifier('registerForm', { 'size': 'invisible' });
           const confirmationResult = await auth.signInWithPhoneNumber(phone, appVerifier);
           const code = prompt('Enter the verification code sent to your phone:');
           if (code) {
             const userCredential = await confirmationResult.confirm(code);
             const user = userCredential.user;
             const linkedEmail = `phone${phone}@nathibiz.com`;
+            console.log('Linking phone to email:', linkedEmail);
             await user.updateEmail(linkedEmail);
             await user.updatePassword(password);
             await firebase.firestore().setDoc(firebase.firestore().doc(db, 'phoneMappings', phone), {
@@ -274,18 +298,18 @@
         }
       } catch (error) {
         console.error('Registration error:', error.code, error.message);
-        alert('Error registering: ' + error.message);
+        alert('Error registering: ' + (error.message || 'Unknown error'));
       }
     });
 
     function signOut() {
+      console.log('Sign-out button clicked');
       auth.signOut().catch(error => {
         console.error('Sign-out error:', error);
         alert('Error signing out: ' + error.message);
       });
     }
 
-    // Google Maps handling
     function getEmbedUrl(googleMapsUrl) {
       if (!googleMapsUrl) return '';
       try {
@@ -310,6 +334,7 @@
     }
 
     function getCurrentLocation() {
+      console.log('Send Your Location button clicked');
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
@@ -317,6 +342,7 @@
             const lng = position.coords.longitude;
             const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
             document.getElementById('googleMapsUrl').value = mapsUrl;
+            console.log('Location set:', mapsUrl);
             alert('Location set in Google Maps URL field.');
           },
           (error) => {
@@ -329,30 +355,35 @@
       }
     }
 
-    // Business form logic
     document.getElementById('businessType').addEventListener('change', (e) => {
       const otherField = document.getElementById('businessTypeOther');
-      otherField.classList.toggle('conditional', e.target.value !== 'Other');
-      otherField.required = e.target.value === 'Other';
+      const isOther = e.target.value === 'Other';
+      otherField.classList.toggle('conditional', !isOther);
+      otherField.style.display = isOther ? 'block' : 'none';
+      otherField.required = isOther;
     });
 
     document.getElementById('hasBusinessAccount').addEventListener('change', (e) => {
       const bankField = document.getElementById('bankName');
-      bankField.classList.toggle('conditional', e.target.value !== 'Yes');
-      bankField.required = e.target.value === 'Yes';
+      const isYes = e.target.value === 'Yes';
+      bankField.classList.toggle('conditional', !isYes);
+      bankField.style.display = isYes ? 'block' : 'none';
+      bankField.required = isYes;
     });
 
     document.getElementById('businessForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const businessName = document.getElementById('businessName').value;
+      const ownerName = document.getElementById('ownerName').value.trim();
+      const ownerId = document.getElementById('ownerId').value.trim();
+      const ownerContactNumber = document.getElementById('ownerContactNumber').value.trim();
+      const residentialAddress = document.getElementById('residentialAddress').value.trim();
+      const businessName = document.getElementById('businessName').value.trim();
+      const businessContactNumber = document.getElementById('businessContactNumber').value.trim();
       let businessType = document.getElementById('businessType').value;
-      const businessTypeOther = document.getElementById('businessTypeOther').value;
-      const ownerName = document.getElementById('ownerName').value;
-      const ownerId = document.getElementById('ownerId').value;
-      const contactNumber = document.getElementById('contactNumber').value;
-      const physicalAddress = document.getElementById('physicalAddress').value;
-      const postalAddress = document.getElementById('postalAddress').value;
-      let googleMapsUrl = document.getElementById('googleMapsUrl').value;
+      const businessTypeOther = document.getElementById('businessTypeOther').value.trim();
+      const businessAddress = document.getElementById('businessAddress').value.trim();
+      let googleMapsUrl = document.getElementById('googleMapsUrl').value.trim();
+      const municipalityName = document.getElementById('municipalityName').value.trim();
       const operationYears = parseInt(document.getElementById('operationYears').value);
       const operationMonths = parseInt(document.getElementById('operationMonths').value);
       const hasBusinessAccount = document.getElementById('hasBusinessAccount').value;
@@ -360,6 +391,7 @@
       const user = auth.currentUser;
 
       try {
+        console.log('Register Business button clicked');
         if (businessType === 'Other' && !businessTypeOther) {
           alert('Please specify the business type.');
           return;
@@ -368,8 +400,16 @@
           alert('Please select a bank.');
           return;
         }
-        if (!/^\+?\d{10,15}$/.test(contactNumber)) {
-          alert('Please enter a valid contact number (e.g., +27xxxxxxxxx).');
+        if (!/^\+\d{10,15}$/.test(ownerContactNumber)) {
+          alert('Please enter a valid owner contact number starting with + (e.g., +27xxxxxxxxx).');
+          return;
+        }
+        if (!/^\+\d{10,15}$/.test(businessContactNumber)) {
+          alert('Please enter a valid business contact number starting with + (e.g., +27xxxxxxxxx).');
+          return;
+        }
+        if (!municipalityName) {
+          alert('Please enter a municipality name.');
           return;
         }
 
@@ -379,22 +419,26 @@
         }
 
         if (user) {
+          console.log('Saving business data for user:', user.uid);
           await firebase.firestore().setDoc(firebase.firestore().doc(db, 'businesses', user.uid), {
-            businessName,
-            businessType: businessType === 'Other' ? businessTypeOther : businessType,
             ownerName,
             ownerId,
-            contactNumber,
-            physicalAddress,
-            postalAddress,
+            ownerContactNumber,
+            residentialAddress,
+            businessName,
+            businessContactNumber,
+            businessType: businessType === 'Other' ? businessTypeOther : businessType,
+            businessAddress,
             googleMapsUrl,
             embedUrl,
+            municipalityName,
             operationYears,
             operationMonths,
             hasBusinessAccount,
             bankName: hasBusinessAccount === 'Yes' ? bankName : null,
             userId: user.uid
           });
+          console.log('Business data saved successfully');
           alert('Business registered successfully!');
           showSection('dashboard');
         } else {
@@ -410,18 +454,22 @@
       const user = auth.currentUser;
       if (user) {
         try {
+          console.log('Loading business details for user:', user.uid);
           const businessDoc = await firebase.firestore().getDoc(firebase.firestore().doc(db, 'businesses', user.uid));
           if (businessDoc.exists()) {
             const data = businessDoc.data();
+            console.log('Loaded business data:', data);
             document.getElementById('businessDetails').innerHTML = `
-              <p><strong>Business Name:</strong> ${data.businessName}</p>
-              <p><strong>Business Type:</strong> ${data.businessType}</p>
-              <p><strong>Owner:</strong> ${data.ownerName}</p>
+              <p><strong>Owner Name:</strong> ${data.ownerName}</p>
               <p><strong>ID/Passport:</strong> ${data.ownerId}</p>
-              <p><strong>Contact Number:</strong> ${data.contactNumber}</p>
-              <p><strong>Physical Address:</strong> ${data.physicalAddress}</p>
-              <p><strong>Postal Address:</strong> ${data.postalAddress}</p>
+              <p><strong>Owner Contact Number:</strong> ${data.ownerContactNumber}</p>
+              <p><strong>Residential Address:</strong> ${data.residentialAddress}</p>
+              <p><strong>Business Name:</strong> ${data.businessName}</p>
+              <p><strong>Business Contact Number:</strong> ${data.businessContactNumber}</p>
+              <p><strong>Business Type:</strong> ${data.businessType}</p>
+              <p><strong>Business Address:</strong> ${data.businessAddress}</p>
               <p><strong>Location:</strong> <a href="${data.googleMapsUrl}" target="_blank">${data.googleMapsUrl || 'Not set'}</a></p>
+              <p><strong>Municipality Name:</strong> ${data.municipalityName}</p>
               <p><strong>Operation Time:</strong> ${data.operationYears} years, ${data.operationMonths} months</p>
               <p><strong>Business Account:</strong> ${data.hasBusinessAccount}${data.bankName ? ' (' + data.bankName + ')' : ''}</p>
             `;
@@ -435,6 +483,7 @@
               console.log('No valid map URL; iframe hidden');
             }
           } else {
+            console.log('No business data found; showing registration');
             showSection('businessRegistration');
           }
         } catch (error) {
@@ -452,7 +501,9 @@
       const user = auth.currentUser;
 
       try {
+        console.log('Add Sale button clicked');
         if (user) {
+          console.log('Adding sale:', { amount, cost, date });
           await firebase.firestore().addDoc(firebase.firestore().collection(db, 'sales'), {
             amount,
             cost,
@@ -460,6 +511,7 @@
             userId: user.uid,
             type: 'sale'
           });
+          console.log('Sale added successfully');
           alert('Sale added successfully!');
           document.getElementById('salesForm').reset();
           loadSalesAndExpenses();
@@ -473,12 +525,14 @@
     document.getElementById('expensesForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const amount = parseFloat(document.getElementById('expenseAmount').value);
-      const category = document.getElementById('expenseCategory').value;
+      const category = document.getElementById('expenseCategory').value.trim();
       const date = document.getElementById('expenseDate').value;
       const user = auth.currentUser;
 
       try {
+        console.log('Add Expense button clicked');
         if (user) {
+          console.log('Adding expense:', { amount, category, date });
           await firebase.firestore().addDoc(firebase.firestore().collection(db, 'expenses'), {
             amount,
             category,
@@ -486,6 +540,7 @@
             userId: user.uid,
             type: 'expense'
           });
+          console.log('Expense added successfully');
           alert('Expense added successfully!');
           document.getElementById('expensesForm').reset();
           loadSalesAndExpenses();
@@ -500,9 +555,10 @@
       const user = auth.currentUser;
       if (user) {
         try {
+          console.log('Loading sales and expenses for user:', user.uid);
           const salesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'sales'), firebase.firestore().where('userId', '==', user.uid)));
           const expensesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'expenses'), firebase.firestore().where('userId', '==', user.uid)));
-          // Display logic can be added if needed
+          console.log('Loaded sales:', salesSnapshot.docs.length, 'expenses:', expensesSnapshot.docs.length);
         } catch (error) {
           console.error('Error loading sales/expenses:', error);
         }
@@ -514,6 +570,7 @@
       const user = auth.currentUser;
       if (user) {
         try {
+          console.log('Generate Report button clicked for period:', period);
           const salesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'sales'), firebase.firestore().where('userId', '==', user.uid)));
           const expensesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'expenses'), firebase.firestore().where('userId', '==', user.uid)));
           let sales = salesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -548,6 +605,7 @@
           const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
           const profit = totalSales - totalCosts - totalExpenses;
 
+          console.log('Report generated:', { totalSales, totalCosts, totalExpenses, profit });
           document.getElementById('reportOutput').innerHTML = `
             <h4>${period.charAt(0).toUpperCase() + period.slice(1)} Report</h4>
             <table>
@@ -570,6 +628,7 @@
       const user = auth.currentUser;
       if (user && taxMonth) {
         try {
+          console.log('Estimate Tax button clicked for month:', taxMonth);
           const [year, month] = taxMonth.split('-').map(Number);
           const startDate = new Date(year, month - 1, 1);
           const endDate = new Date(year, month, 1);
@@ -598,6 +657,7 @@
           const taxRate = 0.15; // Example: 15% flat rate for small businesses
           const estimatedTax = taxableIncome * taxRate;
 
+          console.log('Tax estimated:', { taxableIncome, estimatedTax });
           document.getElementById('taxOutput').innerHTML = `
             <h4>Tax Estimation for ${taxMonth}</h4>
             <p>Taxable Income: R${taxableIncome.toFixed(2)}</p>
@@ -616,6 +676,7 @@
       const user = auth.currentUser;
       if (user) {
         try {
+          console.log('Export to CSV button clicked');
           const salesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'sales'), firebase.firestore().where('userId', '==', user.uid)));
           const expensesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'expenses'), firebase.firestore().where('userId', '==', user.uid)));
 
@@ -637,6 +698,7 @@
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
+          console.log('CSV exported successfully');
         } catch (error) {
           console.error('Error exporting CSV:', error);
           alert('Error exporting CSV: ' + error.message);
@@ -647,8 +709,8 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js')
-          .then(registration => {
-            console.log('Service Worker registered with scope:', registration.scope);
+          .then(reg => {
+            console.log('Service Worker registered with scope:', reg.scope);
           })
           .catch(error => {
             console.error('Service Worker registration failed:', error);
