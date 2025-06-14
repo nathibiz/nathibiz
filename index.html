@@ -524,7 +524,12 @@
 
     async function exportToCSV() {
       const user = auth.currentUser;
-      if (user) {
+      if (!user) {
+        alert('Please sign in to export data.');
+        return;
+      }
+
+      try {
         const salesSnapshot = await db.collection('sales').where('userId', '==', user.uid).get();
         const expensesSnapshot = await db.collection('expenses').where('userId', '==', user.uid).get();
 
@@ -545,10 +550,10 @@
           return expenseDate >= startDate && expenseDate < endDate;
         });
 
-        const totalSales = sales.reduce((sum, sale) => sum + sale.amount, 0);
-        const totalCosts = sales.reduce((sum, sale) => sum + sale.cost, 0);
+        const totalSales = sales.reduce((sum, sale) => sum + sale.amount, 0) || 0;
+        const totalCosts = sales.reduce((sum, sale) => sum + sale.cost, 0) || 0;
         const income = totalSales - totalCosts;
-        const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+        const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0) || 0;
         const profit = income - totalExpenses;
 
         const csvData = [
@@ -560,7 +565,7 @@
           totalSales.toFixed(2),
           totalCosts.toFixed(2),
           income.toFixed(2),
-          expenses.map(exp => `${exp.category}: R${exp.amount.toFixed(2)}`).join(', ') || 'None',
+          expenses.length > 0 ? expenses.map(exp => `${exp.category}: R${exp.amount.toFixed(2)}`).join(', ') : 'None',
           profit.toFixed(2)
         ]);
 
@@ -573,6 +578,12 @@
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        console.log('CSV exported successfully');
+        document.getElementById('debug').innerText += 'CSV exported successfully\n';
+      } catch (error) {
+        console.error('Error exporting CSV:', error);
+        document.getElementById('debug').innerText += `Error exporting CSV: ${error.message}\n`;
+        alert('Failed to export CSV: ' + error.message);
       }
     }
 
