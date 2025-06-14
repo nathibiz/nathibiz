@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device=device-width, initial-scale=1.0">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -194,20 +194,29 @@
       console.log('Auth state changed:', user ? `User ${user.uid}, Email: ${user.email}` : 'No user');
       document.getElementById('debugInfo').innerText += `\nAuth state: ${user ? 'Signed in as ' + user.email : 'No user'}`;
       if (user) {
-        firebase.firestore().getDoc(firebase.firestore().doc(db, 'businesses', user.uid)).then(doc => {
-          console.log('Business check result:', doc.exists());
-          document.getElementById('debugInfo').innerText += `\nBusiness check: ${doc.exists() ? 'Exists' : 'Not found'}`;
-          if (doc.exists()) {
-            showSection('dashboard');
-          } else {
-            showSection('businessRegistration');
-          }
-        }).catch(error => {
-          console.error('Error checking business:', error);
-          document.getElementById('debugInfo').innerText += `\nBusiness check error: ${error.message}`;
-          alert('Error loading business data: ' + error.message);
-          showSection('businessRegistration'); // Fallback to registration on error
-        });
+        let attempts = 0;
+        const maxAttempts = 3;
+        const checkBusiness = () => {
+          setTimeout(() => {
+            firebase.firestore().getDoc(firebase.firestore().doc(db, 'businesses', user.uid)).then(doc => {
+              console.log('Business check result:', doc.exists());
+              document.getElementById('debugInfo').innerText += `\nBusiness check: ${doc.exists() ? 'Exists' : 'Not found'}`;
+              showSection(doc.exists() ? 'dashboard' : 'businessRegistration');
+            }).catch(error => {
+              console.error('Error checking business:', error);
+              document.getElementById('debugInfo').innerText += `\nBusiness check error: ${error.message}`;
+              if (attempts < maxAttempts) {
+                attempts++;
+                checkBusiness(); // Retry
+              } else {
+                alert('Failed to load business data after retries: ' + error.message);
+                showSection('businessRegistration');
+                window.location.reload();
+              }
+            });
+          }, 1000);
+        };
+        checkBusiness();
       } else {
         showSection('auth');
       }
