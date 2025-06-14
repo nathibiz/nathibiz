@@ -172,11 +172,11 @@
       console.log('Auth state changed:', user ? `User ${user?.uid}, Email: ${user?.email}` : 'No user');
       document.getElementById('debug').innerText += `Auth state: ${user ? `Signed in as ${user.email}` : 'No user'}\n`;
       if (user && user.uid && typeof user.uid === 'string') {
-        const businessRef = firebase.firestore().doc(`businesses/${user.uid}`);
-        firebase.firestore().getDoc(businessRef).then(doc => {
-          console.log('Business check result:', doc.exists());
-          document.getElementById('debug').innerText += `Business check: ${doc.exists() ? 'Exists' : 'Not found'}\n`;
-          showSection(doc.exists() ? 'dashboard' : 'businessRegistration');
+        const businessRef = db.collection('businesses').doc(user.uid);
+        businessRef.get().then(doc => {
+          console.log('Business check result:', doc.exists);
+          document.getElementById('debug').innerText += `Business check: ${doc.exists ? 'Exists' : 'Not found'}\n`;
+          showSection(doc.exists ? 'dashboard' : 'businessRegistration');
         }).catch(error => {
           console.error('Error checking business:', error);
           document.getElementById('debug').innerText += `Business check error: ${error.message}\n`;
@@ -204,9 +204,9 @@
         // Ensure state change is handled
         auth.onAuthStateChanged(user => {
           if (user && user.uid && typeof user.uid === 'string') {
-            const businessRef = firebase.firestore().doc(`businesses/${user.uid}`);
-            firebase.firestore().getDoc(businessRef).then(doc => {
-              showSection(doc.exists() ? 'dashboard' : 'businessRegistration');
+            const businessRef = db.collection('businesses').doc(user.uid);
+            businessRef.get().then(doc => {
+              showSection(doc.exists ? 'dashboard' : 'businessRegistration');
             }).catch(error => {
               console.error('Error checking business:', error);
               alert('Error checking business: ' + error.message);
@@ -345,7 +345,7 @@
       }
 
       if (user) {
-        await firebase.firestore().setDoc(firebase.firestore().doc(`businesses/${user.uid}`), {
+        await db.collection('businesses').doc(user.uid).set({
           businessName,
           businessType: businessType === 'Other' ? businessTypeOther : businessType,
           ownerName,
@@ -371,8 +371,8 @@
     async function loadBusinessDetails() {
       const user = auth.currentUser;
       if (user) {
-        const businessDoc = await firebase.firestore().getDoc(firebase.firestore().doc(`businesses/${user.uid}`));
-        if (businessDoc.exists()) {
+        const businessDoc = await db.collection('businesses').doc(user.uid).get();
+        if (businessDoc.exists) {
           const data = businessDoc.data();
           document.getElementById('businessDetails').innerHTML = `
             <p><strong>Business Name:</strong> ${data.businessName}</p>
@@ -409,7 +409,7 @@
       const user = auth.currentUser;
 
       if (user) {
-        await firebase.firestore().addDoc(firebase.firestore().collection(db, 'sales'), {
+        await db.collection('sales').add({
           amount,
           cost,
           date,
@@ -430,7 +430,7 @@
       const user = auth.currentUser;
 
       if (user) {
-        await firebase.firestore().addDoc(firebase.firestore().collection(db, 'expenses'), {
+        await db.collection('expenses').add({
           amount,
           category,
           date,
@@ -446,8 +446,8 @@
     async function loadSalesAndExpenses() {
       const user = auth.currentUser;
       if (user) {
-        const salesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'sales'), firebase.firestore().where('userId', '==', user.uid)));
-        const expensesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'expenses'), firebase.firestore().where('userId', '==', user.uid)));
+        const salesSnapshot = await db.collection('sales').where('userId', '==', user.uid).get();
+        const expensesSnapshot = await db.collection('expenses').where('userId', '==', user.uid).get();
         // Display logic can be added if needed
       }
     }
@@ -456,8 +456,8 @@
       const period = document.getElementById('reportPeriod').value;
       const user = auth.currentUser;
       if (user) {
-        const salesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'sales'), firebase.firestore().where('userId', '==', user.uid)));
-        const expensesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'expenses'), firebase.firestore().where('userId', '==', user.uid)));
+        const salesSnapshot = await db.collection('sales').where('userId', '==', user.uid).get();
+        const expensesSnapshot = await db.collection('expenses').where('userId', '==', user.uid).get();
         let sales = salesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         let expenses = expensesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
@@ -511,8 +511,8 @@
         const startDate = new Date(year, month - 1, 1);
         const endDate = new Date(year, month, 1);
 
-        const salesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'sales'), firebase.firestore().where('userId', '==', user.uid)));
-        const expensesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'expenses'), firebase.firestore().where('userId', '==', user.uid)));
+        const salesSnapshot = await db.collection('sales').where('userId', '==', user.uid).get();
+        const expensesSnapshot = await db.collection('expenses').where('userId', '==', user.uid).get();
 
         let sales = salesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         let expenses = expensesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -548,8 +548,8 @@
     async function exportToCSV() {
       const user = auth.currentUser;
       if (user) {
-        const salesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'sales'), firebase.firestore().where('userId', '==', user.uid)));
-        const expensesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'expenses'), firebase.firestore().where('userId', '==', user.uid)));
+        const salesSnapshot = await db.collection('sales').where('userId', '==', user.uid).get();
+        const expensesSnapshot = await db.collection('expenses').where('userId', '==', user.uid).get();
 
         const sales = salesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         const expenses = expensesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
