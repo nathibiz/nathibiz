@@ -109,7 +109,17 @@
       </form>
       <form id="expensesForm">
         <input type="number" id="expenseAmount" placeholder="Expense Amount" required step="0.01"><br>
-        <input type="text" id="expenseCategory" placeholder="Category (e.g., Utilities)" required><br>
+        <select id="expenseCategory" required>
+          <option value="" disabled selected>Select Expense Category</option>
+          <option value="Rent">Rent</option>
+          <option value="Water & Electricity">Water & Electricity</option>
+          <option value="Airtime & Data">Airtime & Data</option>
+          <option value="Transport/Fuel">Transport/Fuel</option>
+          <option value="Salaries/Wages">Salaries/Wages</option>
+          <option value="Marketing">Marketing</option>
+          <option value="Supplies">Supplies</option>
+          <option value="Other">Other</option>
+        </select><br>
         <input type="date" id="expenseDate" required><br>
         <button type="submit">Add Expense</button>
       </form>
@@ -521,11 +531,38 @@
         const sales = salesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         const expenses = expensesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
+        const now = new Date();
+        let startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        let endDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+        sales = sales.filter(sale => {
+          const saleDate = new Date(sale.date);
+          return saleDate >= startDate && saleDate < endDate;
+        });
+
+        expenses = expenses.filter(expense => {
+          const expenseDate = new Date(expense.date);
+          return expenseDate >= startDate && expenseDate < endDate;
+        });
+
+        const totalSales = sales.reduce((sum, sale) => sum + sale.amount, 0);
+        const totalCosts = sales.reduce((sum, sale) => sum + sale.cost, 0);
+        const income = totalSales - totalCosts;
+        const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+        const profit = income - totalExpenses;
+
         const csvData = [
-          ['Type', 'Amount', 'Cost', 'Category', 'Date'],
-          ...sales.map(sale => ['Sale', sale.amount, sale.cost, '', sale.date]),
-          ...expenses.map(expense => ['Expense', expense.amount, '', expense.category, expense.date])
+          ['Date', 'Sales', 'Cost of Sales', 'Income', 'Expenses', 'Profit']
         ];
+
+        csvData.push([
+          now.toISOString().split('T')[0],
+          totalSales.toFixed(2),
+          totalCosts.toFixed(2),
+          income.toFixed(2),
+          expenses.map(exp => `${exp.category}: R${exp.amount.toFixed(2)}`).join(', ') || 'None',
+          profit.toFixed(2)
+        ]);
 
         const csvContent = csvData.map(row => row.join(';')).join('\n');
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
