@@ -189,13 +189,9 @@
       const phoneInputs = document.querySelectorAll(`#${formType}Form .phone-input`);
       emailInputs.forEach(input => input.classList.toggle('hidden', method !== 'email'));
       phoneInputs.forEach(input => input.classList.toggle('hidden', method !== 'phone'));
-      if (method === 'phone' && formType === 'signIn') {
-        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-          'size': 'normal',
-          'callback': () => {}
-        });
-      } else if (method === 'phone' && formType === 'register') {
-        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container-register', {
+      if (method === 'phone') {
+        const recaptchaId = formType === 'signIn' ? 'recaptcha-container' : 'recaptcha-container-register';
+        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier(recaptchaId, {
           'size': 'normal',
           'callback': () => {}
         });
@@ -259,22 +255,19 @@
       auth.signOut();
     }
 
-    // Simplified Google Maps handling
+    // Google Maps handling
     function getEmbedUrl(googleMapsUrl) {
       if (!googleMapsUrl) return '';
       try {
-        // Try to use URL directly as embed if it contains 'embed'
         if (googleMapsUrl.includes('embed')) {
           return googleMapsUrl;
         }
-        // Extract coordinates or place
         const coordMatch = googleMapsUrl.match(/@([-.\d]+),([-.\d]+)/) || googleMapsUrl.match(/q=([-.\d]+),([-.\d]+)/);
         if (coordMatch) {
           const lat = coordMatch[1];
           const lng = coordMatch[2];
           return `https://www.google.com/maps/embed/v1/place?q=${lat},${lng}&zoom=15`;
         }
-        // Fallback to attempt place-based embed
         const placeMatch = googleMapsUrl.match(/place\/([^/]+)/);
         if (placeMatch) {
           const place = encodeURIComponent(placeMatch[1]);
@@ -283,7 +276,7 @@
       } catch (error) {
         console.error('Error parsing Google Maps URL:', error);
       }
-      return ''; // Invalid or unsupported URL
+      return '';
     }
 
     function getCurrentLocation() {
@@ -458,7 +451,7 @@
       if (user) {
         const salesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'sales'), firebase.firestore().where('userId', '==', user.uid)));
         const expensesSnapshot = await firebase.firestore().getDocs(firebase.firestore().query(firebase.firestore().collection(db, 'expenses'), firebase.firestore().where('userId', '==', user.uid)));
-        // Implement display logic if needed
+        // Display logic can be added if needed
       }
     }
 
@@ -533,7 +526,7 @@
         });
 
         expenses = expenses.filter(expense => {
-          const expenseDate = new Date(expense.date);
+          const expenseDate = new Date(exercise.date);
           return expenseDate >= startDate && expenseDate < endDate;
         });
 
