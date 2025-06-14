@@ -18,7 +18,7 @@
     .business-hub a { margin-right: 10px; color: #10b981; text-decoration: none; font-size: 24px; }
     .business-hub h2 { margin: 0; font-size: 24px; color: #047857; }
     .hub-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
-    .hub-button { background: #d1fae5; border: none; padding: 15px; border-radius: 10px; text-align: center; cursor: pointer; font-size: 16px; color: #047857; }
+    .hub-button { background: #d1fae5; border: none; padding: 15px; border-radius: 10px; text-align: center; cursor: pointer; font-size: 16px; color: #047857; display: flex; flex-direction: column; align-items: center; }
     .hub-button:hover { background: #a7f3d0; }
     .hub-button img { width: 24px; height: 24px; margin-bottom: 5px; }
     .content { margin-top: 10px; display: none; }
@@ -114,141 +114,120 @@
         <h2>Business Hub</h2>
       </div>
       <div class="hub-grid">
-        <button class="hub-button" onclick="showContent('registerBusiness')">
+        <button class="hub-button" onclick="showSection('businessRegistration')">
           <img src="https://img.icons8.com/ios-filled/50/047857/document.png" alt="Register">
           Register Business
         </button>
-        <button class="hub-button" onclick="showContent('salesTracking')">
+        <button class="hub-button" onclick="showSection('salesTracking')">
           <img src="https://img.icons8.com/ios-filled/50/047857/checked-checkbox.png" alt="Sales">
           Sales Tracking
         </button>
-        <button class="hub-button" onclick="showContent('reports')">
+        <button class="hub-button" onclick="showSection('reports')">
           <img src="https://img.icons8.com/ios-filled/50/047857/report.png" alt="Reports">
           Reports
         </button>
-        <button class="hub-button" onclick="showContent('exportData')">
-          <img src="https://img.icons8.com/ios-filled/50/047857/graph.png" alt="Export">
+        <button class="hub-button" onclick="showSection('exportData')">
+          <img src="https://img.icons8.com/ios-filled/50/047857/export.png" alt="Export">
           Export Data
         </button>
-        <button class="hub-button" onclick="showContent('taxEstimate')">
-          <img src="https://img.icons8.com/ios-filled/50/047857/analyzed-image.png" alt="Tax">
+        <button class="hub-button" onclick="showSection('taxEstimate')">
+          <img src="https://img.icons8.com/ios-filled/50/047857/tax.png" alt="Tax">
           Tax Estimate
         </button>
-        <button class="hub-button" onclick="showContent('funding')">
+        <button class="hub-button" onclick="showSection('funding')">
           <img src="https://img.icons8.com/ios-filled/50/047857/bank-building.png" alt="Funding">
           Funding
         </button>
-        <button class="hub-button" onclick="showContent('help')">
+        <button class="hub-button" onclick="showSection('help')">
           <img src="https://img.icons8.com/ios-filled/50/047857/help.png" alt="Help">
           Help
         </button>
       </div>
-      <div class="content" id="registerBusiness">
-        <h3>Register Your Business</h3>
-        <form id="businessForm">
-          <input type="text" id="ownerName" placeholder="Owner Name" required><br>
-          <input type="text" id="ownerId" placeholder="ID/Passport Number" required><br>
-          <input type="tel" id="contactNumber" placeholder="Contact Number (e.g., +27xxxxxxxxx)" required><br>
-          <input type="text" id="residentialAddress" placeholder="Residential Address" required><br>
-          <input type="text" id="businessName" placeholder="Business Name" required><br>
-          <input type="tel" id="businessContactNumber" placeholder="Business Contact Number (e.g., +27xxxxxxxxx)" required><br>
-          <select id="businessType" required>
-            <option value="" disabled selected>Select Business Type</option>
-            <option value="Spaza/Tuck shop">Spaza/Tuck shop</option>
-            <option value="Supermarket">Supermarket</option>
-            <option value="Fast Food">Fast Food</option>
-            <option value="Street hawker/vendor">Street hawker/vendor</option>
-            <option value="Salon/Barber">Salon/Barber</option>
-            <option value="Car Wash">Car Wash</option>
-            <option value="Home Based Business">Home Based Business</option>
-            <option value="Informal transport">Informal transport</option>
-            <option value="Other">Other</option>
-          </select><br>
-          <input type="text" id="businessTypeOther" placeholder="Specify Business Type" class="conditional"><br>
-          <input type="text" id="businessAddress" placeholder="Business Address" required><br>
-          <input type="text" id="googleMapsUrl" placeholder="Location for Business (Google Maps URL, optional)"><br>
-          <input type="text" id="municipalityName" placeholder="Municipality Name" required><br>
-          <input type="number" id="operationYears" placeholder="Years in Operation" min="0" required><br>
-          <input type="number" id="operationMonths" placeholder="Months in Operation" min="0" max="11" required><br>
-          <select id="hasBusinessAccount" required>
-            <option value="" disabled selected>Do you have a business account?</option>
-            <option value="Yes">Yes</option>
-            <option value="No">No</option>
-          </select><br>
-          <select id="bankName" class="conditional">
-            <option value="" disabled selected>Select Bank</option>
-            <option value="ABSA">ABSA</option>
-            <option value="Bidvest">Bidvest</option>
-            <option value="Capitec">Capitec</option>
-            <option value="FNB">FNB</option>
-            <option value="Nedbank">Nedbank</option>
-            <option value="Standard Bank">Standard Bank</option>
-            <option value="TymeBank">TymeBank</option>
-          </select><br>
-          <button type="submit">Register Business</button>
-        </form>
+    </section>
+
+    <section id="salesTracking" class="hidden">
+      <div class="business-hub">
+        <a href="#" onclick="showSection('dashboard')">←</a>
+        <h2>Sales Tracking</h2>
       </div>
-      <div class="content" id="salesTracking">
-        <h3>Sales Tracking</h3>
-        <form id="salesForm">
-          <input type="number" id="saleAmount" placeholder="Sale Amount" required step="0.01"><br>
-          <input type="number" id="saleCost" placeholder="Cost of Sale" required step="0.01"><br>
-          <input type="date" id="saleDate" required><br>
-          <button type="submit">Add Sale</button>
-        </form>
-        <form id="expensesForm">
-          <input type="number" id="expenseAmount" placeholder="Expense Amount" required step="0.01"><br>
-          <select id="expenseCategory" required>
-            <option value="" disabled selected>Select Expense Category</option>
-            <option value="Rent">Rent</option>
-            <option value="Water & Electricity">Water & Electricity</option>
-            <option value="Airtime & Data">Airtime & Data</option>
-            <option value="Transport/Fuel">Transport/Fuel</option>
-            <option value="Salaries/Wages">Salaries/Wages</option>
-            <option value="Marketing">Marketing</option>
-            <option value="Supplies">Supplies</option>
-            <option value="Other">Other</option>
-          </select><br>
-          <input type="date" id="expenseDate" required><br>
-          <button type="submit">Add Expense</button>
-        </form>
-        <table id="transactionsTable">
-          <tr>
-            <th>Date</th>
-            <th>Amount</th>
-            <th>Cost/Category</th>
-            <th>Type</th>
-          </tr>
-        </table>
+      <form id="salesForm">
+        <input type="number" id="saleAmount" placeholder="Sale Amount" required step="0.01"><br>
+        <input type="number" id="saleCost" placeholder="Cost of Sale" required step="0.01"><br>
+        <input type="date" id="saleDate" required><br>
+        <button type="submit">Add Sale</button>
+      </form>
+      <form id="expensesForm">
+        <input type="number" id="expenseAmount" placeholder="Expense Amount" required step="0.01"><br>
+        <select id="expenseCategory" required>
+          <option value="" disabled selected>Select Expense Category</option>
+          <option value="Rent">Rent</option>
+          <option value="Water & Electricity">Water & Electricity</option>
+          <option value="Airtime & Data">Airtime & Data</option>
+          <option value="Transport/Fuel">Transport/Fuel</option>
+          <option value="Salaries/Wages">Salaries/Wages</option>
+          <option value="Marketing">Marketing</option>
+          <option value="Supplies">Supplies</option>
+          <option value="Other">Other</option>
+        </select><br>
+        <input type="date" id="expenseDate" required><br>
+        <button type="submit">Add Expense</button>
+      </form>
+      <table id="transactionsTable">
+        <tr>
+          <th>Date</th>
+          <th>Amount</th>
+          <th>Cost/Category</th>
+          <th>Type</th>
+        </tr>
+      </table>
+    </section>
+
+    <section id="reports" class="hidden">
+      <div class="business-hub">
+        <a href="#" onclick="showSection('dashboard')">←</a>
+        <h2>Reports</h2>
       </div>
-      <div class="content" id="reports">
-        <h3>Reports</h3>
-        <select id="reportPeriod">
-          <option value="daily">Daily</option>
-          <option value="weekly">Weekly</option>
-          <option value="monthly">Monthly</option>
-        </select>
-        <button onclick="generateReport()">Generate Report</button>
-        <div id="reportOutput"></div>
+      <select id="reportPeriod">
+        <option value="daily">Daily</option>
+        <option value="weekly">Weekly</option>
+        <option value="monthly">Monthly</option>
+      </select>
+      <button onclick="generateReport()">Generate Report</button>
+      <div id="reportOutput"></div>
+    </section>
+
+    <section id="exportData" class="hidden">
+      <div class="business-hub">
+        <a href="#" onclick="showSection('dashboard')">←</a>
+        <h2>Export Data</h2>
       </div>
-      <div class="content" id="exportData">
-        <h3>Export Data</h3>
-        <button onclick="exportToCSV()">Export to CSV</button>
+      <button onclick="exportToCSV()">Export to CSV</button>
+    </section>
+
+    <section id="taxEstimate" class="hidden">
+      <div class="business-hub">
+        <a href="#" onclick="showSection('dashboard')">←</a>
+        <h2>Tax Estimate</h2>
       </div>
-      <div class="content" id="taxEstimate">
-        <h3>Tax Estimate</h3>
-        <input type="month" id="taxMonth" required>
-        <button onclick="estimateTax()">Estimate Tax</button>
-        <div id="taxOutput"></div>
+      <input type="month" id="taxMonth" required>
+      <button onclick="estimateTax()">Estimate Tax</button>
+      <div id="taxOutput"></div>
+    </section>
+
+    <section id="funding" class="hidden">
+      <div class="business-hub">
+        <a href="#" onclick="showSection('dashboard')">←</a>
+        <h2>Funding</h2>
       </div>
-      <div class="content" id="funding">
-        <h3>Funding</h3>
-        <p>Funding application feature coming soon.</p>
+      <p>Funding application feature coming soon.</p>
+    </section>
+
+    <section id="help" class="hidden">
+      <div class="business-hub">
+        <a href="#" onclick="showSection('dashboard')">←</a>
+        <h2>Help</h2>
       </div>
-      <div class="content" id="help">
-        <h3>Help</h3>
-        <p>Contact support at support@nathibiz.com for assistance.</p>
-      </div>
+      <p>Contact support at support@nathibiz.com for assistance.</p>
     </section>
   </div>
 
@@ -278,18 +257,13 @@
     function showSection(sectionId) {
       document.querySelectorAll('section').forEach(section => section.classList.add('hidden'));
       document.getElementById(sectionId).classList.remove('hidden');
+      if (sectionId === 'dashboard') {
+        loadBusinessDetails();
+      } else if (sectionId === 'salesTracking') {
+        loadSalesAndExpenses();
+      }
       console.log(`Showing section: ${sectionId}`);
       document.getElementById('debug').innerText += `Showing section: ${sectionId}\n`;
-    }
-
-    function showContent(contentId) {
-      document.querySelectorAll('.content').forEach(content => content.classList.remove('active'));
-      document.getElementById(contentId).classList.add('active');
-      if (contentId === 'salesTracking') {
-        loadSalesAndExpenses();
-      } else if (contentId === 'registerBusiness') {
-        loadBusinessDetails();
-      }
     }
 
     auth.onAuthStateChanged(user => {
@@ -301,7 +275,6 @@
           console.log('Business check result:', doc.exists);
           document.getElementById('debug').innerText += `Business check: ${doc.exists ? 'Exists' : 'Not found'}\n`;
           showSection(doc.exists ? 'dashboard' : 'businessRegistration');
-          if (doc.exists) showContent('salesTracking');
         }).catch(error => {
           console.error('Error checking business:', error);
           document.getElementById('debug').innerText += `Business check error: ${error.message}\n`;
@@ -452,7 +425,6 @@
         });
         alert('Business registered successfully!');
         showSection('dashboard');
-        showContent('salesTracking');
       } else {
         alert('Please sign in to register a business.');
       }
@@ -464,8 +436,8 @@
         const businessDoc = await db.collection('businesses').doc(user.uid).get();
         if (businessDoc.exists) {
           const data = businessDoc.data();
-          document.getElementById('registerBusiness').innerHTML = `
-            <h3>Register Your Business</h3>
+          document.getElementById('businessRegistration').innerHTML = `
+            <h2>Register Your Business</h2>
             <p><strong>Owner Name:</strong> ${data.ownerName}</p>
             <p><strong>ID/Passport:</strong> ${data.ownerId}</p>
             <p><strong>Contact Number:</strong> ${data.contactNumber}</p>
@@ -605,7 +577,7 @@
         const profit = totalSales - totalCosts - totalExpenses;
 
         document.getElementById('reportOutput').innerHTML = `
-          <h4>${period.charAt(0).toUpperCase() + period.slice(1)} Report</h4>
+          <h3>${period.charAt(0).toUpperCase() + period.slice(1)} Report</h3>
           <table>
             <tr><th>Metric</th><th>Amount</th></tr>
             <tr><td>Total Sales</td><td>R${totalSales.toFixed(2)}</td></tr>
@@ -650,7 +622,7 @@
         const estimatedTax = taxableIncome * taxRate;
 
         document.getElementById('taxOutput').innerHTML = `
-          <h4>Tax Estimation for ${taxMonth}</h4>
+          <h3>Tax Estimation for ${taxMonth}</h3>
           <p>Taxable Income: R${taxableIncome.toFixed(2)}</p>
           <p>Estimated Tax (15%): R${estimatedTax.toFixed(2)}</p>
         `;
