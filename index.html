@@ -171,8 +171,8 @@
     auth.onAuthStateChanged(user => {
       console.log('Auth state changed:', user ? `User ${user?.uid}, Email: ${user?.email}` : 'No user');
       document.getElementById('debug').innerText += `Auth state: ${user ? `Signed in as ${user.email}` : 'No user'}\n`;
-      if (user && user.uid) {
-        const businessRef = firebase.firestore().doc(db, 'businesses', user.uid);
+      if (user && user.uid && typeof user.uid === 'string') {
+        const businessRef = firebase.firestore().doc(`businesses/${user.uid}`);
         firebase.firestore().getDoc(businessRef).then(doc => {
           console.log('Business check result:', doc.exists());
           document.getElementById('debug').innerText += `Business check: ${doc.exists() ? 'Exists' : 'Not found'}\n`;
@@ -203,8 +203,8 @@
         document.getElementById('debug').innerText += `Sign-in successful, UID: ${userCredential.user.uid}\n`;
         // Ensure state change is handled
         auth.onAuthStateChanged(user => {
-          if (user) {
-            const businessRef = firebase.firestore().doc(db, 'businesses', user.uid);
+          if (user && user.uid && typeof user.uid === 'string') {
+            const businessRef = firebase.firestore().doc(`businesses/${user.uid}`);
             firebase.firestore().getDoc(businessRef).then(doc => {
               showSection(doc.exists() ? 'dashboard' : 'businessRegistration');
             }).catch(error => {
@@ -345,7 +345,7 @@
       }
 
       if (user) {
-        await firebase.firestore().setDoc(firebase.firestore().doc(db, 'businesses', user.uid), {
+        await firebase.firestore().setDoc(firebase.firestore().doc(`businesses/${user.uid}`), {
           businessName,
           businessType: businessType === 'Other' ? businessTypeOther : businessType,
           ownerName,
@@ -371,7 +371,7 @@
     async function loadBusinessDetails() {
       const user = auth.currentUser;
       if (user) {
-        const businessDoc = await firebase.firestore().getDoc(firebase.firestore().doc(db, 'businesses', user.uid));
+        const businessDoc = await firebase.firestore().getDoc(firebase.firestore().doc(`businesses/${user.uid}`));
         if (businessDoc.exists()) {
           const data = businessDoc.data();
           document.getElementById('businessDetails').innerHTML = `
