@@ -206,6 +206,7 @@
       if (user) {
         firebase.firestore().getDoc(firebase.firestore().doc(db, 'businesses', user.uid)).then(doc => {
           console.log('Business check result:', doc.exists());
+          document.getElementById('debugInfo').innerText += `\nBusiness check: ${doc.exists() ? 'Exists' : 'Not found'}`;
           if (doc.exists()) {
             showSection('dashboard');
           } else {
@@ -213,7 +214,9 @@
           }
         }).catch(error => {
           console.error('Error checking business:', error);
-          alert('Error loading data: ' + error.message);
+          document.getElementById('debugInfo').innerText += `\nBusiness check error: ${error.message}`;
+          alert('Error loading business data: ' + error.message);
+          showSection('businessRegistration'); // Fallback to registration on error
         });
       } else {
         showSection('auth');
@@ -330,12 +333,13 @@
           console.log('Email sign-in successful, UID:', userCredential.user.uid);
           debugInfo.innerText += '\nEmail sign-in successful, UID: ' + userCredential.user.uid;
           alert('Signed in successfully, waiting for UI update');
-          // Wait for auth state to propagate
+          // Force reload to ensure UI updates
           await new Promise(resolve => setTimeout(resolve, 1000));
           const user = auth.currentUser;
           if (user) {
             console.log('Verified user:', user.uid);
             debugInfo.innerText += '\nVerified user: ' + user.uid;
+            window.location.reload(); // Force reload to update UI
           } else {
             throw new Error('Authentication state not updated');
           }
