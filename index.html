@@ -170,7 +170,7 @@
 
     auth.onAuthStateChanged(user => {
       console.log('Auth state changed:', user ? `User ${user?.uid}, Email: ${user?.email}` : 'No user');
-      document.getElementById('debug').innerText += `Auth state: ${user ? `Signed in as ${user.email}` : 'No user'}\n';
+      document.getElementById('debug').innerText += `Auth state: ${user ? `Signed in as ${user.email}` : 'No user'}\n`;
       if (user && user.uid) {
         firebase.firestore().getDoc(firebase.firestore().doc(db, 'businesses', user.uid)).then(doc => {
           console.log('Business check result:', doc.exists());
