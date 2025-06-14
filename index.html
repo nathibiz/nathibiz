@@ -23,6 +23,10 @@
     th { background-color: #f9fafb; }
     .conditional { display: none; }
     #debug { color: #666; font-size: 12px; margin-top: 10px; }
+    #transactionsTable th:nth-child(1), #transactionsTable td:nth-child(1) { width: 20%; }
+    #transactionsTable th:nth-child(2), #transactionsTable td:nth-child(2) { width: 20%; }
+    #transactionsTable th:nth-child(3), #transactionsTable td:nth-child(3) { width: 20%; }
+    #transactionsTable th:nth-child(4), #transactionsTable td:nth-child(4) { width: 40%; }
   </style>
 </head>
 <body>
@@ -123,6 +127,14 @@
         <input type="date" id="expenseDate" required><br>
         <button type="submit">Add Expense</button>
       </form>
+      <table id="transactionsTable">
+        <tr>
+          <th>Date</th>
+          <th>Amount</th>
+          <th>Cost/Category</th>
+          <th>Type</th>
+        </tr>
+      </table>
       <h3>Reports</h3>
       <select id="reportPeriod">
         <option value="daily">Daily</option>
@@ -378,6 +390,45 @@
       }
     }
 
+    async function loadSalesAndExpenses() {
+      const user = auth.currentUser;
+      if (user) {
+        const salesSnapshot = await db.collection('sales').where('userId', '==', user.uid).get();
+        const expensesSnapshot = await db.collection('expenses').where('userId', '==', user.uid).get();
+        const table = document.getElementById('transactionsTable');
+        table.innerHTML = `
+          <tr>
+            <th>Date</th>
+            <th>Amount</th>
+            <th>Cost/Category</th>
+            <th>Type</th>
+          </tr>
+        `;
+
+        salesSnapshot.docs.forEach(doc => {
+          const data = doc.data();
+          const row = table.insertRow();
+          row.innerHTML = `
+            <td>${data.date}</td>
+            <td>R${data.amount.toFixed(2)}</td>
+            <td>R${data.cost.toFixed(2)}</td>
+            <td>Sale</td>
+          `;
+        });
+
+        expensesSnapshot.docs.forEach(doc => {
+          const data = doc.data();
+          const row = table.insertRow();
+          row.innerHTML = `
+            <td>${data.date}</td>
+            <td>R${data.amount.toFixed(2)}</td>
+            <td>${data.category}</td>
+            <td>Expense</td>
+          `;
+        });
+      }
+    }
+
     document.getElementById('salesForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const amount = parseFloat(document.getElementById('saleAmount').value);
@@ -419,15 +470,6 @@
         loadSalesAndExpenses();
       }
     });
-
-    async function loadSalesAndExpenses() {
-      const user = auth.currentUser;
-      if (user) {
-        const salesSnapshot = await db.collection('sales').where('userId', '==', user.uid).get();
-        const expensesSnapshot = await db.collection('expenses').where('userId', '==', user.uid).get();
-        // Display logic can be added if needed
-      }
-    }
 
     async function generateReport() {
       const period = document.getElementById('reportPeriod').value;
