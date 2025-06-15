@@ -36,14 +36,24 @@
     #salesTable th:nth-child(2), #salesTable td:nth-child(2) { width: 20%; }
     #salesTable th:nth-child(3), #salesTable td:nth-child(3) { width: 20%; }
     #salesTable th:nth-child(4), #salesTable td:nth-child(4) { width: 40%; }
-    .date-input { display: flex; align-items: center; }
+    .date-input { position: relative; display: block; }
     .date-input input[type="date"], .date-input input[type="month"] {
-      flex: 1;
-      margin-right: 15px;
+      width: 100%;
       padding-right: 30px; /* Space for the icon */
-      background: url('https://img.icons8.com/ios-filled/24/047857/calendar.png') no-repeat right center;
-      background-size: 20px 20px; /* Adjusted size for better fit */
-      background-position: calc(100% - 5px) center; /* Position icon inside input */
+      box-sizing: border-box;
+    }
+    .date-input input[type="date"]::after,
+    .date-input input[type="month"]::after {
+      content: '';
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 20px;
+      height: 20px;
+      background: url('https://img.icons8.com/ios-filled/24/047857/calendar.png') no-repeat center;
+      background-size: contain;
+      pointer-events: none; /* Ensure the icon doesn't block clicks */
     }
   </style>
 </head>
