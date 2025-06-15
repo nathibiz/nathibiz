@@ -44,7 +44,7 @@
       <h2>Sign In</h2>
       <div id="debug"></div>
       <form id="signInForm">
-        <input type="email" id="signInEmail" placeholder="Email" required><br>
+        <input type="email" id="signInEmail" placeholder="Email Address" required><br>
         <input type="password" id="signInPassword" placeholder="Password" required><br>
         <button type="submit">Sign In</button>
       </form>
@@ -55,7 +55,9 @@
       <h2>Register</h2>
       <div id="debugRegister"></div>
       <form id="registerForm">
-        <input type="email" id="registerEmail" placeholder="Email" required><br>
+        <input type="text" id="registerName" placeholder="Name and Surname" required><br>
+        <input type="tel" id="registerContact" placeholder="Contact Number (e.g., +27xxxxxxxxx)" required><br>
+        <input type="email" id="registerEmail" placeholder="Email Address" required><br>
         <input type="password" id="registerPassword" placeholder="Password" required><br>
         <button type="submit">Register</button>
       </form>
@@ -145,6 +147,10 @@
           <img src="https://img.icons8.com/ios-filled/50/047857/help.png" alt="Help">
           Help
         </button>
+        <button class="hub-button" onclick="showSection('user')">
+          <img src="https://img.icons8.com/ios-filled/50/047857/user.png" alt="User">
+          User
+        </button>
       </div>
     </section>
 
@@ -175,14 +181,6 @@
         <input type="date" id="expenseDate" required><br>
         <button type="submit">Add Expense</button>
       </form>
-      <table id="salesTable">
-        <tr>
-          <th>Date</th>
-          <th>Amount</th>
-          <th>Cost</th>
-          <th>Type</th>
-        </tr>
-      </table>
     </section>
 
     <section id="reports" class="hidden">
@@ -232,6 +230,22 @@
       </div>
       <p>Contact support at support@nathibiz.com for assistance.</p>
     </section>
+
+    <section id="user" class="hidden">
+      <div class="business-hub">
+        <a href="#" onclick="showSection('dashboard')">←</a>
+        <h2>My Information</h2>
+      </div>
+      <div id="userInfo">
+        <p><strong>Name and Surname:</strong> <span id="userName"></span></p>
+        <p><strong>Contact Number:</strong> <span id="userContact"></span></p>
+        <p><strong>Email Address:</strong> <span id="userEmail"></span></p>
+        <form id="changePasswordForm">
+          <input type="password" id="newPassword" placeholder="New Password" required><br>
+          <button type="submit">Change Password</button>
+        </form>
+      </div>
+    </section>
   </div>
 
   <script>
@@ -264,6 +278,8 @@
         loadBusinessDetails();
       } else if (sectionId === 'salesTracking') {
         loadSales();
+      } else if (sectionId === 'user') {
+        loadUserInfo();
       }
       console.log(`Showing section: ${sectionId}`);
       document.getElementById('debug').innerText += `Showing section: ${sectionId}\n`;
@@ -311,12 +327,19 @@
 
     document.getElementById('registerForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      const name = document.getElementById('registerName').value;
+      const contact = document.getElementById('registerContact').value;
       const email = document.getElementById('registerEmail').value;
       const password = document.getElementById('registerPassword').value;
-      console.log('Registration attempt:', { email, passwordLength: password.length });
+      console.log('Registration attempt:', { name, contact, email, passwordLength: password.length });
       document.getElementById('debugRegister').innerText += `Registration attempt: Email ${email}\n`;
       try {
         const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        await db.collection('users').doc(userCredential.user.uid).set({
+          name: name,
+          contact: contact,
+          email: email
+        });
         console.log('Registration successful, UID:', userCredential.user.uid);
         document.getElementById('debugRegister').innerText += `Registration successful, UID: ${userCredential.user.uid}\n`;
         alert('Registration successful! Please sign in.');
@@ -835,6 +858,37 @@
         alert('Failed to export CSV: ' + error.message);
       }
     }
+
+    async function loadUserInfo() {
+      const user = auth.currentUser;
+      if (user) {
+        const userDoc = await db.collection('users').doc(user.uid).get();
+        if (userDoc.exists) {
+          const data = userDoc.data();
+          document.getElementById('userName').textContent = data.name;
+          document.getElementById('userContact').textContent = data.contact;
+          document.getElementById('userEmail').textContent = data.email;
+        }
+      }
+    }
+
+    document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const newPassword = document.getElementById('newPassword').value;
+      const user = auth.currentUser;
+
+      if (user) {
+        try {
+          await user.updatePassword(newPassword);
+          alert('Password changed successfully!');
+          document.getElementById('changePasswordForm').reset();
+        } catch (error) {
+          console.error('Password change error:', error.message);
+          document.getElementById('debug').innerText += `Password change error: ${error.message}\n`;
+          alert('Failed to change password: ' + error.message);
+        }
+      }
+    });
 
     if ('serviceWorker' in navigator) {
       // window.addEventListener('load', () => {
