@@ -37,7 +37,7 @@
     #salesTable th:nth-child(3), #salesTable td:nth-child(3) { width: 20%; }
     #salesTable th:nth-child(4), #salesTable td:nth-child(4) { width: 40%; }
     .date-input { display: flex; align-items: center; }
-    .date-input input[type="date"], .date-input input[type="month"] { flex: 1; margin-right: 5px; }
+    .date-input input[type="date"], .date-input input[type="month"] { flex: 1; margin-right: 15px; } /* Increased spacing */
     .date-input img { width: 24px; height: 24px; cursor: pointer; }
   </style>
 </head>
@@ -752,39 +752,29 @@
           return expenseDate >= startDate && expenseDate < endDate;
         });
 
-        const totalSales = sales.reduce((sum, sale) => sum + sale.amount, 0);
-        const totalCosts = sales.reduce((sum, sale) => sum + sale.cost, 0);
-        const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+        const monthlyTotals = {};
+        sales.forEach(sale => {
+          const monthYear = sale.date.slice(0, 7); // e.g., "2025-06"
+          if (!monthlyTotals[monthYear]) monthlyTotals[monthYear] = { sales: 0, costs: 0 };
+          monthlyTotals[monthYear].sales += sale.amount;
+          monthlyTotals[monthYear].costs += sale.cost;
+        });
+        expenses.forEach(expense => {
+          const monthYear = expense.date.slice(0, 7);
+          if (!monthlyTotals[monthYear]) monthlyTotals[monthYear] = { sales: 0, costs: 0, expenses: 0 };
+          monthlyTotals[monthYear].expenses = (monthlyTotals[monthYear].expenses || 0) + expense.amount;
+        });
+
+        let totalSales = 0, totalCosts = 0, totalExpenses = 0;
+        for (let month in monthlyTotals) {
+          totalSales += monthlyTotals[month].sales;
+          totalCosts += monthlyTotals[month].costs;
+          totalExpenses += monthlyTotals[month].expenses || 0;
+        }
         const income = totalSales - totalCosts;
         const profit = income - totalExpenses;
 
-        let salesTable = '';
-        if (sales.length > 0) {
-          salesTable = `
-            <h3>Sales</h3>
-            <table>
-              <tr><th>Date</th><th>Amount</th><th>Cost</th></tr>
-              ${sales.map(sale => `
-                <tr><td>${sale.date}</td><td>R${sale.amount.toFixed(2)}</td><td>R${sale.cost.toFixed(2)}</td></tr>
-              `).join('')}
-            </table>
-          `;
-        }
-
-        let expensesTable = '';
-        if (expenses.length > 0) {
-          expensesTable = `
-            <h3>Expenses</h3>
-            <table>
-              <tr><th>Date</th><th>Amount</th><th>Category</th></tr>
-              ${expenses.map(exp => `
-                <tr><td>${exp.date}</td><td>R${exp.amount.toFixed(2)}</td><td>${exp.category}</td></tr>
-              `).join('')}
-            </table>
-          `;
-        }
-
-        document.getElementById('reportOutput').innerHTML = `
+        let reportContent = `
           <h3>${period.charAt(0).toUpperCase() + period.replace('yearToDate', 'Year to Date').slice(1)} Report</h3>
           <table>
             <tr><th>Metric</th><th>Amount</th></tr>
@@ -794,9 +784,19 @@
             <tr><td>Total Expenses</td><td>R${totalExpenses.toFixed(2)}</td></tr>
             <tr><td>Profit (Income - Expenses)</td><td>R${profit.toFixed(2)}</td></tr>
           </table>
-          ${salesTable}
-          ${expensesTable}
         `;
+
+        if (period === 'yearToDate') {
+          reportContent += '<h3>Monthly Breakdown</h3><table><tr><th>Month</th><th>Sales</th><th>Costs</th><th>Expenses</th><th>Income</th><th>Profit</th></tr>';
+          for (let month in monthlyTotals) {
+            const monthIncome = monthlyTotals[month].sales - monthlyTotals[month].costs;
+            const monthProfit = monthIncome - (monthlyTotals[month].expenses || 0);
+            reportContent += `<tr><td>${month}</td><td>R${monthlyTotals[month].sales.toFixed(2)}</td><td>R${monthlyTotals[month].costs.toFixed(2)}</td><td>R${(monthlyTotals[month].expenses || 0).toFixed(2)}</td><td>R${monthIncome.toFixed(2)}</td><td>R${monthProfit.toFixed(2)}</td></tr>`;
+          }
+          reportContent += '</table>';
+        }
+
+        document.getElementById('reportOutput').innerHTML = reportContent;
       }
     }
 
@@ -935,14 +935,30 @@
           return expenseDate >= startDate && expenseDate < endDate;
         });
 
-        const totalSales = filteredSales.reduce((sum, sale) => sum + sale.amount, 0) || 0;
-        const totalCosts = filteredSales.reduce((sum, sale) => sum + sale.cost, 0) || 0;
+        const monthlyTotals = {};
+        filteredSales.forEach(sale => {
+          const monthYear = sale.date.slice(0, 7); // e.g., "2025-06"
+          if (!monthlyTotals[monthYear]) monthlyTotals[monthYear] = { sales: 0, costs: 0 };
+          monthlyTotals[monthYear].sales += sale.amount;
+          monthlyTotals[monthYear].costs += sale.cost;
+        });
+        filteredExpenses.forEach(expense => {
+          const monthYear = expense.date.slice(0, 7);
+          if (!monthlyTotals[monthYear]) monthlyTotals[monthYear] = { sales: 0, costs: 0, expenses: 0 };
+          monthlyTotals[monthYear].expenses = (monthlyTotals[monthYear].expenses || 0) + expense.amount;
+        });
+
+        let totalSales = 0, totalCosts = 0, totalExpenses = 0;
+        for (let month in monthlyTotals) {
+          totalSales += monthlyTotals[month].sales;
+          totalCosts += monthlyTotals[month].costs;
+          totalExpenses += monthlyTotals[month].expenses || 0;
+        }
         const income = totalSales - totalCosts;
-        const totalExpenses = filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0) || 0;
         const profit = income - totalExpenses;
 
         const csvData = [
-          ['Date', 'Sales', 'Cost of Sales', 'Income', 'Expenses', 'Profit']
+          ['Date', 'Total Sales', 'Total Cost of Sales', 'Total Income', 'Total Expenses', 'Total Profit']
         ];
 
         csvData.push([
@@ -950,7 +966,7 @@
           totalSales.toFixed(2),
           totalCosts.toFixed(2),
           income.toFixed(2),
-          filteredExpenses.length > 0 ? filteredExpenses.map(exp => `${exp.category}: R${exp.amount.toFixed(2)}`).join(', ') : 'None',
+          totalExpenses.toFixed(2),
           profit.toFixed(2)
         ]);
 
