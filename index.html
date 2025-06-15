@@ -36,6 +36,9 @@
     #salesTable th:nth-child(2), #salesTable td:nth-child(2) { width: 20%; }
     #salesTable th:nth-child(3), #salesTable td:nth-child(3) { width: 20%; }
     #salesTable th:nth-child(4), #salesTable td:nth-child(4) { width: 40%; }
+    .date-input { display: flex; align-items: center; }
+    .date-input input[type="date"], .date-input input[type="month"] { flex: 1; margin-right: 5px; }
+    .date-input img { width: 24px; height: 24px; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -161,25 +164,31 @@
         <h2>Sales Tracking</h2>
       </div>
       <form id="salesForm">
-        <input type="number" id="saleAmount" placeholder="Sale Amount" required step="0.01"><br>
-        <input type="number" id="saleCost" placeholder="Cost of Sale" required step="0.01"><br>
-        <input type="date" id="saleDate" required><br>
+        <div class="date-input">
+          <input type="number" id="saleAmount" placeholder="Sale Amount" required step="0.01"><br>
+          <input type="number" id="saleCost" placeholder="Cost of Sale" required step="0.01"><br>
+          <input type="date" id="saleDate" required>
+          <img src="https://img.icons8.com/ios-filled/24/047857/calendar.png" alt="Calendar">
+        </div>
         <button type="submit">Add Sale</button>
       </form>
       <form id="expensesForm">
-        <input type="number" id="expenseAmount" placeholder="Expense Amount" required step="0.01"><br>
-        <select id="expenseCategory" required>
-          <option value="" disabled selected>Select Expense Category</option>
-          <option value="Rent">Rent</option>
-          <option value="Water & Electricity">Water & Electricity</option>
-          <option value="Airtime & Data">Airtime & Data</option>
-          <option value="Transport/Fuel">Transport/Fuel</option>
-          <option value="Salaries/Wages">Salaries/Wages</option>
-          <option value="Marketing">Marketing</option>
-          <option value="Supplies">Supplies</option>
-          <option value="Other">Other</option>
-        </select><br>
-        <input type="date" id="expenseDate" required><br>
+        <div class="date-input">
+          <input type="number" id="expenseAmount" placeholder="Expense Amount" required step="0.01"><br>
+          <select id="expenseCategory" required>
+            <option value="" disabled selected>Select Expense Category</option>
+            <option value="Rent">Rent</option>
+            <option value="Water & Electricity">Water & Electricity</option>
+            <option value="Airtime & Data">Airtime & Data</option>
+            <option value="Transport/Fuel">Transport/Fuel</option>
+            <option value="Salaries/Wages">Salaries/Wages</option>
+            <option value="Marketing">Marketing</option>
+            <option value="Supplies">Supplies</option>
+            <option value="Other">Other</option>
+          </select><br>
+          <input type="date" id="expenseDate" required>
+          <img src="https://img.icons8.com/ios-filled/24/047857/calendar.png" alt="Calendar">
+        </div>
         <button type="submit">Add Expense</button>
       </form>
     </section>
@@ -211,7 +220,10 @@
         <a href="#" onclick="showSection('dashboard')">←</a>
         <h2>Tax Estimate</h2>
       </div>
-      <input type="month" id="taxMonth" required>
+      <div class="date-input">
+        <input type="month" id="taxMonth" required>
+        <img src="https://img.icons8.com/ios-filled/24/047857/calendar.png" alt="Calendar">
+      </div>
       <button onclick="estimateTax()">Estimate Tax</button>
       <div id="taxOutput"></div>
     </section>
