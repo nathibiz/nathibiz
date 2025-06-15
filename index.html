@@ -319,6 +319,13 @@
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
         console.log('Sign-in successful, UID:', userCredential.user.uid);
         document.getElementById('debug').innerText += `Sign-in successful, UID: ${userCredential.user.uid}\n`;
+        // Manually check and update section after sign-in
+        const user = auth.currentUser;
+        if (user) {
+          const businessRef = db.collection('businesses').doc(user.uid);
+          const doc = await businessRef.get();
+          showSection(doc.exists ? 'dashboard' : 'businessRegistration');
+        }
       } catch (error) {
         console.error('Sign-in error:', error.code, error.message);
         document.getElementById('debug').innerText += `Sign-in error: ${error.message}\n`;
