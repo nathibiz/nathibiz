@@ -93,7 +93,7 @@
         </select><br>
         <input type="text" id="businessTypeOther" placeholder="Specify Business Type" class="conditional"><br>
         <input type="text" id="businessAddress" placeholder="Business Address" required><br>
-        <input type="text" id="googleMapsUrl" placeholder="Location for Business (Google Maps URL, optional)"><br>
+        <input type="text" id="googleMapsUrl" placeholder="Location for Business (Google Maps URL)" required><br>
         <input type="text" id="municipalityName" placeholder="Municipality Name" required><br>
         <input type="number" id="operationYears" placeholder="Years in Operation" min="0" required><br>
         <input type="number" id="operationMonths" placeholder="Months in Operation" min="0" max="11" required><br>
@@ -202,6 +202,7 @@
         <option value="daily">Daily</option>
         <option value="weekly">Weekly</option>
         <option value="monthly">Monthly</option>
+        <option value="yearToDate">Year to Date</option>
       </select>
       <button onclick="generateReport()">Generate Report</button>
       <div id="reportOutput"></div>
@@ -212,7 +213,8 @@
         <a href="#" onclick="showSection('dashboard')">←</a>
         <h2>Export Data</h2>
       </div>
-      <button onclick="exportToCSV()">Export to CSV</button>
+      <button onclick="exportMonthlyData()">Export Monthly Data</button>
+      <button onclick="exportYearToDateData()">Export Year to Date Data</button>
     </section>
 
     <section id="taxEstimate" class="hidden">
@@ -395,15 +397,15 @@
             const lng = position.coords.longitude;
             const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
             document.getElementById('googleMapsUrl').value = mapsUrl;
-            alert('Location set in Location for Business field (for reference only).');
+            alert('Location set in Location for Business field.');
           },
           (error) => {
             console.error('Geolocation error:', error);
-            alert('Error getting location: ' + error.message + '. Please paste a Google Maps URL manually.');
+            alert('Error getting location: ' + error.message + '. Please enter a Google Maps URL.');
           }
         );
       } else {
-        alert('Geolocation is not supported by your browser. Please paste a Google Maps URL.');
+        alert('Geolocation is not supported by your browser. Please enter a Google Maps URL.');
       }
     }
 
@@ -452,6 +454,10 @@
       }
       if (hasBusinessAccount === 'Yes' && !bankName) {
         alert('Please select a bank.');
+        return;
+      }
+      if (!googleMapsUrl) {
+        alert('Please enter a Google Maps URL for the business location.');
         return;
       }
 
@@ -507,7 +513,7 @@
             <p><strong>Business Contact Number:</strong> ${data.businessContactNumber}</p>
             <p><strong>Business Type:</strong> ${data.businessType}</p>
             <p><strong>Business Address:</strong> ${data.businessAddress}</p>
-            <p><strong>Location URL:</strong> <a href="${data.googleMapsUrl}" target="_blank">${data.googleMapsUrl || 'Not set'}</a></p>
+            <p><strong>Location URL:</strong> <a href="${data.googleMapsUrl}" target="_blank">${data.googleMapsUrl}</a></p>
             <p><strong>Municipality Name:</strong> ${data.municipalityName}</p>
             <p><strong>Operation Time:</strong> ${data.operationYears} years, ${data.operationMonths} months</p>
             <p><strong>Business Account:</strong> ${data.hasBusinessAccount}${data.bankName ? ' (' + data.bankName + ')' : ''}</p>
@@ -540,7 +546,7 @@
               </select><br>
               <input type="text" id="businessTypeOther" placeholder="Specify Business Type" class="conditional"><br>
               <input type="text" id="businessAddress" placeholder="Business Address" required><br>
-              <input type="text" id="googleMapsUrl" placeholder="Location for Business (Google Maps URL, optional)"><br>
+              <input type="text" id="googleMapsUrl" placeholder="Location for Business (Google Maps URL)" required><br>
               <input type="text" id="municipalityName" placeholder="Municipality Name" required><br>
               <input type="number" id="operationYears" placeholder="Years in Operation" min="0" required><br>
               <input type="number" id="operationMonths" placeholder="Months in Operation" min="0" max="11" required><br>
@@ -605,6 +611,10 @@
             }
             if (hasBusinessAccount === 'Yes' && !bankName) {
               alert('Please select a bank.');
+              return;
+            }
+            if (!googleMapsUrl) {
+              alert('Please enter a Google Maps URL for the business location.');
               return;
             }
 
@@ -727,6 +737,9 @@
         } else if (period === 'monthly') {
           startDate = new Date(now.getFullYear(), now.getMonth(), 1);
           endDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        } else if (period === 'yearToDate') {
+          startDate = new Date(now.getFullYear(), 0, 1);
+          endDate = new Date(now.getFullYear() + 1, 0, 1);
         }
 
         sales = sales.filter(sale => {
@@ -772,7 +785,7 @@
         }
 
         document.getElementById('reportOutput').innerHTML = `
-          <h3>${period.charAt(0).toUpperCase() + period.slice(1)} Report</h3>
+          <h3>${period.charAt(0).toUpperCase() + period.replace('yearToDate', 'Year to Date').slice(1)} Report</h3>
           <table>
             <tr><th>Metric</th><th>Amount</th></tr>
             <tr><td>Total Sales</td><td>R${totalSales.toFixed(2)}</td></tr>
@@ -829,7 +842,7 @@
       }
     }
 
-    async function exportToCSV() {
+    async function exportMonthlyData() {
       const user = auth.currentUser;
       if (!user) {
         alert('Please sign in to export data.');
@@ -881,16 +894,81 @@
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.setAttribute('href', url);
-        link.setAttribute('download', 'business_data.csv');
+        link.setAttribute('download', 'monthly_business_data.csv');
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        console.log('CSV exported successfully');
-        document.getElementById('debug').innerText += 'CSV exported successfully\n';
+        console.log('Monthly data exported successfully');
+        document.getElementById('debug').innerText += 'Monthly data exported successfully\n';
       } catch (error) {
-        console.error('Error exporting CSV:', error);
-        document.getElementById('debug').innerText += `Error exporting CSV: ${error.message}\n`;
-        alert('Failed to export CSV: ' + error.message);
+        console.error('Error exporting monthly data:', error);
+        document.getElementById('debug').innerText += `Error exporting monthly data: ${error.message}\n`;
+        alert('Failed to export monthly data: ' + error.message);
+      }
+    }
+
+    async function exportYearToDateData() {
+      const user = auth.currentUser;
+      if (!user) {
+        alert('Please sign in to export data.');
+        return;
+      }
+
+      try {
+        const salesSnapshot = await db.collection('sales').where('userId', '==', user.uid).get();
+        const expensesSnapshot = await db.collection('expenses').where('userId', '==', user.uid).get();
+
+        const sales = salesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const expenses = expensesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        const now = new Date();
+        let startDate = new Date(now.getFullYear(), 0, 1);
+        let endDate = new Date(now.getFullYear() + 1, 0, 1);
+
+        let filteredSales = sales.filter(sale => {
+          const saleDate = new Date(sale.date);
+          return saleDate >= startDate && saleDate < endDate;
+        });
+
+        let filteredExpenses = expenses.filter(expense => {
+          const expenseDate = new Date(expense.date);
+          return expenseDate >= startDate && expenseDate < endDate;
+        });
+
+        const totalSales = filteredSales.reduce((sum, sale) => sum + sale.amount, 0) || 0;
+        const totalCosts = filteredSales.reduce((sum, sale) => sum + sale.cost, 0) || 0;
+        const income = totalSales - totalCosts;
+        const totalExpenses = filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0) || 0;
+        const profit = income - totalExpenses;
+
+        const csvData = [
+          ['Date', 'Sales', 'Cost of Sales', 'Income', 'Expenses', 'Profit']
+        ];
+
+        csvData.push([
+          now.toISOString().split('T')[0],
+          totalSales.toFixed(2),
+          totalCosts.toFixed(2),
+          income.toFixed(2),
+          filteredExpenses.length > 0 ? filteredExpenses.map(exp => `${exp.category}: R${exp.amount.toFixed(2)}`).join(', ') : 'None',
+          profit.toFixed(2)
+        ]);
+
+        const csvContent = csvData.map(row => row.join(';')).join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'year_to_date_business_data.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        console.log('Year to Date data exported successfully');
+        document.getElementById('debug').innerText += 'Year to Date data exported successfully\n';
+      } catch (error) {
+        console.error('Error exporting Year to Date data:', error);
+        document.getElementById('debug').innerText += `Error exporting Year to Date data: ${error.message}\n`;
+        alert('Failed to export Year to Date data: ' + error.message);
       }
     }
 
