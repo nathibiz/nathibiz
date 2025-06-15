@@ -152,6 +152,7 @@
           User
         </button>
       </div>
+      <button class="hub-button" onclick="signOut()">Sign Out</button>
     </section>
 
     <section id="salesTracking" class="hidden">
@@ -884,7 +885,8 @@
       if (user) {
         try {
           await user.updatePassword(newPassword);
-          alert('Password changed successfully!');
+          await signOut(); // Sign out the user after password change
+          alert('Password changed successfully! Please sign in with your new password.');
           document.getElementById('changePasswordForm').reset();
         } catch (error) {
           console.error('Password change error:', error.message);
