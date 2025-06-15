@@ -56,7 +56,7 @@
       <div id="debugRegister"></div>
       <form id="registerForm">
         <input type="text" id="registerName" placeholder="Name and Surname" required><br>
-        <input type="tel" id="registerContact" placeholder="Contact Number (e.g., +27xxxxxxxxx)" required><br>
+        <input type="tel" id="registerContact" placeholder="Contact Number (e.g., 0xxxxxxxxx or +27xxxxxxxxx)" required><br>
         <input type="email" id="registerEmail" placeholder="Email Address" required><br>
         <input type="password" id="registerPassword" placeholder="Password" required><br>
         <button type="submit">Register</button>
@@ -72,10 +72,10 @@
       <form id="businessForm">
         <input type="text" id="ownerName" placeholder="Owner Name" required><br>
         <input type="text" id="ownerId" placeholder="ID/Passport Number" required><br>
-        <input type="tel" id="contactNumber" placeholder="Contact Number (e.g., +27xxxxxxxxx)" required><br>
+        <input type="tel" id="contactNumber" placeholder="Contact Number (e.g., 0xxxxxxxxx or +27xxxxxxxxx)" required><br>
         <input type="text" id="residentialAddress" placeholder="Residential Address" required><br>
         <input type="text" id="businessName" placeholder="Business Name" required><br>
-        <input type="tel" id="businessContactNumber" placeholder="Business Contact Number (e.g., +27xxxxxxxxx)" required><br>
+        <input type="tel" id="businessContactNumber" placeholder="Business Contact Number (e.g., 0xxxxxxxxx or +27xxxxxxxxx)" required><br>
         <select id="businessType" required>
           <option value="" disabled selected>Select Business Type</option>
           <option value="Spaza/Tuck shop">Spaza/Tuck shop</option>
@@ -331,6 +331,10 @@
       const contact = document.getElementById('registerContact').value;
       const email = document.getElementById('registerEmail').value;
       const password = document.getElementById('registerPassword').value;
+      if (!/^(0\d{9}|\+27\d{9})$/.test(contact)) {
+        alert('Please enter a valid contact number (e.g., 0xxxxxxxxx or +27xxxxxxxxx).');
+        return;
+      }
       console.log('Registration attempt:', { name, contact, email, passwordLength: password.length });
       document.getElementById('debugRegister').innerText += `Registration attempt: Email ${email}\n`;
       try {
@@ -414,20 +418,20 @@
       const bankName = document.getElementById('bankName').value;
       const user = auth.currentUser;
 
+      if (!/^(0\d{9}|\+27\d{9})$/.test(contactNumber)) {
+        alert('Please enter a valid contact number (e.g., 0xxxxxxxxx or +27xxxxxxxxx).');
+        return;
+      }
+      if (!/^(0\d{9}|\+27\d{9})$/.test(businessContactNumber)) {
+        alert('Please enter a valid business contact number (e.g., 0xxxxxxxxx or +27xxxxxxxxx).');
+        return;
+      }
       if (businessType === 'Other' && !businessTypeOther) {
         alert('Please specify the business type.');
         return;
       }
       if (hasBusinessAccount === 'Yes' && !bankName) {
         alert('Please select a bank.');
-        return;
-      }
-      if (!/^\+?\d{10,15}$/.test(contactNumber)) {
-        alert('Please enter a valid contact number (e.g., +27xxxxxxxxx).');
-        return;
-      }
-      if (!/^\+?\d{10,15}$/.test(businessContactNumber)) {
-        alert('Please enter a valid business contact number (e.g., +27xxxxxxxxx).');
         return;
       }
 
@@ -489,10 +493,10 @@
             <form id="businessForm">
               <input type="text" id="ownerName" placeholder="Owner Name" required><br>
               <input type="text" id="ownerId" placeholder="ID/Passport Number" required><br>
-              <input type="tel" id="contactNumber" placeholder="Contact Number (e.g., +27xxxxxxxxx)" required><br>
+              <input type="tel" id="contactNumber" placeholder="Contact Number (e.g., 0xxxxxxxxx or +27xxxxxxxxx)" required><br>
               <input type="text" id="residentialAddress" placeholder="Residential Address" required><br>
               <input type="text" id="businessName" placeholder="Business Name" required><br>
-              <input type="tel" id="businessContactNumber" placeholder="Business Contact Number (e.g., +27xxxxxxxxx)" required><br>
+              <input type="tel" id="businessContactNumber" placeholder="Business Contact Number (e.g., 0xxxxxxxxx or +27xxxxxxxxx)" required><br>
               <select id="businessType" required>
                 <option value="" disabled selected>Select Business Type</option>
                 <option value="Spaza/Tuck shop">Spaza/Tuck shop</option>
@@ -558,20 +562,20 @@
             const bankName = document.getElementById('bankName').value;
             const user = auth.currentUser;
 
+            if (!/^(0\d{9}|\+27\d{9})$/.test(contactNumber)) {
+              alert('Please enter a valid contact number (e.g., 0xxxxxxxxx or +27xxxxxxxxx).');
+              return;
+            }
+            if (!/^(0\d{9}|\+27\d{9})$/.test(businessContactNumber)) {
+              alert('Please enter a valid business contact number (e.g., 0xxxxxxxxx or +27xxxxxxxxx).');
+              return;
+            }
             if (businessType === 'Other' && !businessTypeOther) {
               alert('Please specify the business type.');
               return;
             }
             if (hasBusinessAccount === 'Yes' && !bankName) {
               alert('Please select a bank.');
-              return;
-            }
-            if (!/^\+?\d{10,15}$/.test(contactNumber)) {
-              alert('Please enter a valid contact number (e.g., +27xxxxxxxxx).');
-              return;
-            }
-            if (!/^\+?\d{10,15}$/.test(businessContactNumber)) {
-              alert('Please enter a valid business contact number (e.g., +27xxxxxxxxx).');
               return;
             }
 
