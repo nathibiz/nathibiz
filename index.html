@@ -23,7 +23,7 @@
     .hub-button img { width: 24px; height: 24px; margin-bottom: 5px; }
     .content { margin-top: 10px; display: none; }
     .content.active { display: block; }
-    input, button, select { margin: 10px 0; padding: 8px; width: calc(100% - 18px); border: 1px solid #d1d5db; border-radius: 4px; font-size: 16px; }
+    input, button, select { margin: 10px 0; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 16px; }
     button { background-color: #4b5563; color: white; cursor: pointer; }
     button:hover { background-color: #374151; }
     .hidden { display: none; }
@@ -36,24 +36,15 @@
     #salesTable th:nth-child(2), #salesTable td:nth-child(2) { width: 20%; }
     #salesTable th:nth-child(3), #salesTable td:nth-child(3) { width: 20%; }
     #salesTable th:nth-child(4), #salesTable td:nth-child(4) { width: 40%; }
-    .date-input { position: relative; display: block; }
+    .date-input { display: flex; align-items: center; }
     .date-input input[type="date"], .date-input input[type="month"] {
-      width: 100%;
-      padding-right: 30px; /* Space for the icon */
-      box-sizing: border-box;
+      width: 80%; /* Shortened width */
+      margin-right: 5px; /* Small gap between input and icon */
     }
-    .date-input input[type="date"]::after,
-    .date-input input[type="month"]::after {
-      content: '';
-      position: absolute;
-      right: 8px;
-      top: 50%;
-      transform: translateY(-50%);
+    .date-input img {
       width: 20px;
       height: 20px;
-      background: url('https://img.icons8.com/ios-filled/24/047857/calendar.png') no-repeat center;
-      background-size: contain;
-      pointer-events: none; /* Ensure the icon doesn't block clicks */
+      cursor: pointer;
     }
   </style>
 </head>
@@ -184,6 +175,7 @@
           <input type="number" id="saleAmount" placeholder="Sale Amount" required step="0.01"><br>
           <input type="number" id="saleCost" placeholder="Cost of Sale" required step="0.01"><br>
           <input type="date" id="saleDate" required>
+          <img src="https://img.icons8.com/ios-filled/24/047857/calendar.png" alt="Calendar" onclick="document.getElementById('saleDate').showPicker();">
         </div>
         <button type="submit">Add Sale</button>
       </form>
@@ -202,6 +194,7 @@
             <option value="Other">Other</option>
           </select><br>
           <input type="date" id="expenseDate" required>
+          <img src="https://img.icons8.com/ios-filled/24/047857/calendar.png" alt="Calendar" onclick="document.getElementById('expenseDate').showPicker();">
         </div>
         <button type="submit">Add Expense</button>
       </form>
@@ -238,6 +231,7 @@
       </div>
       <div class="date-input">
         <input type="month" id="taxMonth" required>
+        <img src="https://img.icons8.com/ios-filled/24/047857/calendar.png" alt="Calendar" onclick="document.getElementById('taxMonth').showPicker();">
       </div>
       <button onclick="estimateTax()">Estimate Tax</button>
       <div id="taxOutput"></div>
