@@ -349,7 +349,7 @@
         }
       } catch (error) {
         console.error('Sign-in error:', error.code, error.message);
-        document.getElementById('debug').innerText += `Sign-in error: ${error.message}\n`;
+        document.getElementById('debug').innerText += `Sign-in error: ${error.code} - ${error.message}\n`;
         alert('Sign-in failed: ' + error.message);
       }
     });
@@ -379,7 +379,7 @@
         showSection('auth');
       } catch (error) {
         console.error('Registration error:', error.code, error.message);
-        document.getElementById('debugRegister').innerText += `Registration error: ${error.message}\n`;
+        document.getElementById('debugRegister').innerText += `Registration error: ${error.code} - ${error.message}\n`;
         alert('Registration failed: ' + error.message);
       }
     });
