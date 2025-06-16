@@ -23,7 +23,7 @@
     .hub-button img { width: 24px; height: 24px; margin-bottom: 5px; }
     .content { margin-top: 10px; display: none; }
     .content.active { display: block; }
-    input, button, select { margin: 10px 0; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 16px; }
+    input, button, select { margin: 10px 0; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 16px; width: 100%; box-sizing: border-box; }
     button { background-color: #4b5563; color: white; cursor: pointer; }
     button:hover { background-color: #374151; }
     .hidden { display: none; }
@@ -36,15 +36,16 @@
     #salesTable th:nth-child(2), #salesTable td:nth-child(2) { width: 20%; }
     #salesTable th:nth-child(3), #salesTable td:nth-child(3) { width: 20%; }
     #salesTable th:nth-child(4), #salesTable td:nth-child(4) { width: 40%; }
-    .date-input { display: flex; align-items: center; }
+    .date-input { display: flex; align-items: center; flex-direction: column; }
     .date-input input[type="date"], .date-input input[type="month"] {
-      width: 80%; /* Shortened width */
-      margin-right: 5px; /* Small gap between input and icon */
+      width: 100%; /* Full width for mobile */
+      margin-right: 0; /* Remove gap */
     }
     .date-input img {
       width: 20px;
       height: 20px;
       cursor: pointer;
+      margin-top: 5px; /* Space below input */
     }
   </style>
 </head>
@@ -792,16 +793,6 @@
             <tr><td>Profit (Income - Expenses)</td><td>R${profit.toFixed(2)}</td></tr>
           </table>
         `;
-
-        if (period === 'yearToDate') {
-          reportContent += '<h3>Monthly Breakdown</h3><table><tr><th>Month</th><th>Sales</th><th>Costs</th><th>Expenses</th><th>Income</th><th>Profit</th></tr>';
-          for (let month in monthlyTotals) {
-            const monthIncome = monthlyTotals[month].sales - monthlyTotals[month].costs;
-            const monthProfit = monthIncome - (monthlyTotals[month].expenses || 0);
-            reportContent += `<tr><td>${month}</td><td>R${monthlyTotals[month].sales.toFixed(2)}</td><td>R${monthlyTotals[month].costs.toFixed(2)}</td><td>R${(monthlyTotals[month].expenses || 0).toFixed(2)}</td><td>R${monthIncome.toFixed(2)}</td><td>R${monthProfit.toFixed(2)}</td></tr>`;
-          }
-          reportContent += '</table>';
-        }
 
         document.getElementById('reportOutput').innerHTML = reportContent;
       }
