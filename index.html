@@ -1,4 +1,278 @@
-<!-- [The full HTML content remains the same until the #skillsDevelopment section] -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Business & Financial Tracker</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" href="/icon-192x192.png">
+  <link rel="apple-touch-icon" href="/icon-512x512.png">
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f3f4f6; }
+    .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    h2 { color: #1f2937; }
+    .business-hub { display: flex; align-items: center; margin-bottom: 20px; }
+    .business-hub a { margin-right: 10px; color: #10b981; text-decoration: none; font-size: 24px; }
+    .business-hub h2 { margin: 0; font-size: 24px; color: #047857; }
+    .hub-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
+    .hub-button { background: #d1fae5; border: none; padding: 15px; border-radius: 10px; text-align: center; cursor: pointer; font-size: 16px; color: #047857; display: flex; flex-direction: column; align-items: center; }
+    .hub-button:hover { background: #a7f3d0; }
+    .hub-button img { width: 24px; height: 24px; margin-bottom: 5px; }
+    .content { margin-top: 10px; display: none; }
+    .content.active { display: block; }
+    input, button, select { margin: 10px 0; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 16px; width: 100%; box-sizing: border-box; }
+    button { background-color: #4b5563; color: white; cursor: pointer; }
+    button:hover { background-color: #374151; }
+    .hidden { display: none; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; }
+    th { background-color: #f9fafb; }
+    .conditional { display: none; }
+    #debug { color: #666; font-size: 12px; margin-top: 10px; }
+    #salesTable th:nth-child(1), #salesTable td:nth-child(1) { width: 20%; }
+    #salesTable th:nth-child(2), #salesTable td:nth-child(2) { width: 20%; }
+    #salesTable th:nth-child(3), #salesTable td:nth-child(3) { width: 20%; }
+    #salesTable th:nth-child(4), #salesTable td:nth-child(4) { width: 40%; }
+    .date-input { display: flex; align-items: center; flex-direction: column; }
+    .date-input input[type="date"], .date-input input[type="month"] {
+      width: 100%; /* Full width for mobile */
+      margin-right: 0; /* Remove gap */
+    }
+    .date-input img {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+      margin-top: 5px; /* Space below input */
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section id="auth">
+      <h2>Sign In</h2>
+      <div id="debug"></div>
+      <form id="signInForm">
+        <input type="email" id="signInEmail" placeholder="Email Address" required><br>
+        <input type="password" id="signInPassword" placeholder="Password" required><br>
+        <button type="submit">Sign In</button>
+      </form>
+      <p>Don't have an account? <a href="#" id="showRegister">Register</a></p>
+    </section>
+
+    <section id="register" class="hidden">
+      <h2>Register</h2>
+      <div id="debugRegister"></div>
+      <form id="registerForm">
+        <input type="text" id="registerName" placeholder="Name and Surname" required><br>
+        <input type="tel" id="registerContact" placeholder="Contact Number (e.g., 0xxxxxxxxx or +27xxxxxxxxx)" required><br>
+        <input type="email" id="registerEmail" placeholder="Email Address" required><br>
+        <input type="password" id="registerPassword" placeholder="Password" required><br>
+        <button type="submit">Register</button>
+      </form>
+      <p>Already have an account? <a href="#" id="showSignIn">Sign In</a></p>
+    </section>
+
+    <section id="businessRegistration" class="hidden">
+      <div class="business-hub">
+        <a href="#" onclick="showSection('dashboard')">←</a>
+        <h2>Register Your Business</h2>
+      </div>
+      <form id="businessForm">
+        <input type="text" id="ownerName" placeholder="Owner Name" required><br>
+        <input type="text" id="ownerId" placeholder="ID/Passport Number" required><br>
+        <input type="tel" id="contactNumber" placeholder="Contact Number (e.g., 0xxxxxxxxx or +27xxxxxxxxx)" required><br>
+        <input type="text" id="residentialAddress" placeholder="Residential Address" required><br>
+        <input type="text" id="businessName" placeholder="Business Name" required><br>
+        <input type="tel" id="businessContactNumber" placeholder="Business Contact Number (e.g., 0xxxxxxxxx or +27xxxxxxxxx)" required><br>
+        <select id="businessType" required>
+          <option value="" disabled selected>Select Business Type</option>
+          <option value="Spaza/Tuck shop">Spaza/Tuck shop</option>
+          <option value="Supermarket">Supermarket</option>
+          <option value="Fast Food">Fast Food</option>
+          <option value="Street hawker/vendor">Street hawker/vendor</option>
+          <option value="Salon/Barber">Salon/Barber</option>
+          <option value="Car Wash">Car Wash</option>
+          <option value="Home Based Business">Home Based Business</option>
+          <option value="Informal transport">Informal transport</option>
+          <option value="Other">Other</option>
+        </select><br>
+        <input type="text" id="businessTypeOther" placeholder="Specify Business Type" class="conditional"><br>
+        <input type="text" id="businessAddress" placeholder="Business Address" required><br>
+        <input type="text" id="googleMapsUrl" placeholder="Location for Business (Google Maps URL)" required><br>
+        <input type="text" id="municipalityName" placeholder="Municipality Name" required><br>
+        <input type="number" id="operationYears" placeholder="Years in Operation" min="0" required><br>
+        <input type="number" id="operationMonths" placeholder="Months in Operation" min="0" max="11" required><br>
+        <select id="hasBusinessAccount" required>
+          <option value="" disabled selected>Do you have a business account?</option>
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select><br>
+        <select id="bankName" class="conditional">
+          <option value="" disabled selected>Select Bank</option>
+          <option value="ABSA">ABSA</option>
+          <option value="Bidvest">Bidvest</option>
+          <option value="Capitec">Capitec</option>
+          <option value="FNB">FNB</option>
+          <option value="Nedbank">Nedbank</option>
+          <option value="Standard Bank">Standard Bank</option>
+          <option value="TymeBank">TymeBank</option>
+        </select><br>
+        <button type="submit">Register Business</button>
+      </form>
+    </section>
+
+    <section id="dashboard" class="hidden">
+      <div class="business-hub">
+        <a href="#" onclick="showSection('auth')">←</a>
+        <h2>Business Hub</h2>
+      </div>
+      <div class="hub-grid">
+        <button class="hub-button" onclick="showSection('businessRegistration')">
+          <img src="https://img.icons8.com/ios-filled/50/047857/document.png" alt="Register">
+          Register Business
+        </button>
+        <button class="hub-button" onclick="showSection('salesTracking')">
+          <img src="https://img.icons8.com/ios-filled/50/047857/checked-checkbox.png" alt="Sales">
+          Sales Tracking
+        </button>
+        <button class="hub-button" onclick="showSection('reports')">
+          <img src="https://img.icons8.com/ios-filled/50/047857/statistics.png" alt="Reports">
+          Reports
+        </button>
+        <button class="hub-button" onclick="showSection('exportData')">
+          <img src="https://img.icons8.com/ios-filled/50/047857/export.png" alt="Export">
+          Export Data
+        </button>
+        <button class="hub-button" onclick="showSection('taxEstimate')">
+          <img src="https://img.icons8.com/ios-filled/50/047857/tax.png" alt="Tax">
+          Tax Estimate
+        </button>
+        <button class="hub-button" onclick="showSection('funding')">
+          <img src="https://img.icons8.com/ios-filled/50/047857/bank-building.png" alt="Funding">
+          Funding
+        </button>
+        <button class="hub-button" onclick="showSection('help')">
+          <img src="https://img.icons8.com/ios-filled/50/047857/help.png" alt="Help">
+          Help
+        </button>
+        <button class="hub-button" onclick="showSection('user')">
+          <img src="https://img.icons8.com/ios-filled/50/047857/user.png" alt="User">
+          User
+        </button>
+        <button class="hub-button" onclick="showSection('skillsDevelopment')">
+          <img src="https://img.icons8.com/ios-filled/50/047857/graduation-cap.png" alt="Skills">
+          Skills Development
+        </button>
+      </div>
+      <button class="hub-button" onclick="signOut()">Sign Out</button>
+    </section>
+
+    <section id="salesTracking" class="hidden">
+      <div class="business-hub">
+        <a href="#" onclick="showSection('dashboard')">←</a>
+        <h2>Sales Tracking</h2>
+      </div>
+      <form id="salesForm">
+        <div class="date-input">
+          <input type="number" id="saleAmount" placeholder="Sale Amount" required step="0.01"><br>
+          <input type="number" id="saleCost" placeholder="Cost of Sale" required step="0.01"><br>
+          <input type="date" id="saleDate" required>
+          <img src="https://img.icons8.com/ios-filled/24/047857/calendar.png" alt="Calendar" onclick="document.getElementById('saleDate').showPicker();">
+        </div>
+        <button type="submit">Add Sale</button>
+      </form>
+      <form id="expensesForm">
+        <div class="date-input">
+          <input type="number" id="expenseAmount" placeholder="Expense Amount" required step="0.01"><br>
+          <select id="expenseCategory" required>
+            <option value="" disabled selected>Select Expense Category</option>
+            <option value="Rent">Rent</option>
+            <option value="Water & Electricity">Water & Electricity</option>
+            <option value="Airtime & Data">Airtime & Data</option>
+            <option value="Transport/Fuel">Transport/Fuel</option>
+            <option value="Salaries/Wages">Salaries/Wages</option>
+            <option value="Marketing">Marketing</option>
+            <option value="Supplies">Supplies</option>
+            <option value="Other">Other</option>
+          </select><br>
+          <input type="date" id="expenseDate" required>
+          <img src="https://img.icons8.com/ios-filled/24/047857/calendar.png" alt="Calendar" onclick="document.getElementById('expenseDate').showPicker();">
+        </div>
+        <button type="submit">Add Expense</button>
+      </form>
+    </section>
+
+    <section id="reports" class="hidden">
+      <div class="business-hub">
+        <a href="#" onclick="showSection('dashboard')">←</a>
+        <h2>Reports</h2>
+      </div>
+      <select id="reportPeriod">
+        <option value="daily">Daily</option>
+        <option value="weekly">Weekly</option>
+        <option value="monthly">Monthly</option>
+        <option value="yearToDate">Year to Date</option>
+      </select>
+      <button onclick="generateReport()">Generate Report</button>
+      <div id="reportOutput"></div>
+    </section>
+
+    <section id="exportData" class="hidden">
+      <div class="business-hub">
+        <a href="#" onclick="showSection('dashboard')">←</a>
+        <h2>Export Data</h2>
+      </div>
+      <button onclick="exportMonthlyData()">Export Monthly Data</button>
+      <button onclick="exportYearToDateData()">Export Year to Date Data</button>
+    </section>
+
+    <section id="taxEstimate" class="hidden">
+      <div class="business-hub">
+        <a href="#" onclick="showSection('dashboard')">←</a>
+        <h2>Tax Estimate</h2>
+      </div>
+      <div class="date-input">
+        <input type="month" id="taxMonth" required>
+        <img src="https://img.icons8.com/ios-filled/24/047857/calendar.png" alt="Calendar" onclick="document.getElementById('taxMonth').showPicker();">
+      </div>
+      <button onclick="estimateTax()">Estimate Tax</button>
+      <div id="taxOutput"></div>
+    </section>
+
+    <section id="funding" class="hidden">
+      <div class="business-hub">
+        <a href="#" onclick="showSection('dashboard')">←</a>
+        <h2>Funding</h2>
+      </div>
+      <p>Funding application feature coming soon.</p>
+    </section>
+
+    <section id="help" class="hidden">
+      <div class="business-hub">
+        <a href="#" onclick="showSection('dashboard')">←</a>
+        <h2>Help</h2>
+      </div>
+      <p>Contact support at support@nathibiz.com for assistance.</p>
+    </section>
+
+    <section id="user" class="hidden">
+      <div class="business-hub">
+        <a href="#" onclick="showSection('dashboard')">←</a>
+        <h2>My Information</h2>
+      </div>
+      <div id="userInfo">
+        <p><strong>Name and Surname:</strong> <span id="userName"></span></p>
+        <p><strong>Contact Number:</strong> <span id="userContact"></span></p>
+        <p><strong>Email Address:</strong> <span id="userEmail"></span></p>
+        <form id="changePasswordForm">
+          <input type="password" id="newPassword" placeholder="New Password" required><br>
+          <button type="submit">Change Password</button>
+        </form>
+      </div>
+    </section>
 
     <section id="skillsDevelopment" class="hidden">
       <div class="business-hub">
@@ -11,7 +285,7 @@
           Project Management
         </button>
         <button class="hub-button" onclick="alert('Placeholder: Customer Service Excellence Course')">
-          <img src="https://img.icons8.com/ios-filled/50/047857/customer-support.png" alt="Customer Service"> <!-- Updated URL -->
+          <img src="https://img.icons8.com/ios-filled/50/047857/customer-support.png" alt="Customer Service">
           Customer Service Excellence
         </button>
         <button class="hub-button" onclick="alert('Placeholder: Conflict Management Course')">
@@ -40,4 +314,784 @@
         </button>
       </div>
     </section>
-<!-- [The rest of the HTML content remains the same] -->
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBjop9idbdOohdUtDvztaPmlLk-w4Xiy3c",
+      authDomain: "nathibiz.firebaseapp.com",
+      projectId: "nathibiz",
+      storageBucket: "nathibiz.firebasestorage.app",
+      messagingSenderId: "585170233799",
+      appId: "1:585170233799:web:e79c3b9f334d23343b91e2"
+    };
+
+    try {
+      firebase.initializeApp(firebaseConfig);
+      console.log('Firebase initialized, version:', firebase.SDK_VERSION);
+      document.getElementById('debug').innerText = `Firebase v${firebase.SDK_VERSION} initialized\n`;
+    } catch (error) {
+      console.error('Firebase init failed:', error);
+      document.getElementById('debug').innerText = `Init error: ${error.message}\n`;
+      alert('Firebase init failed: ' + error.message);
+    }
+
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    function showSection(sectionId) {
+      document.querySelectorAll('section').forEach(section => section.classList.add('hidden'));
+      document.getElementById(sectionId).classList.remove('hidden');
+      if (sectionId === 'dashboard') {
+        loadBusinessDetails();
+      } else if (sectionId === 'salesTracking') {
+        loadSales();
+      } else if (sectionId === 'user') {
+        loadUserInfo();
+      }
+      console.log(`Showing section: ${sectionId}`);
+      document.getElementById('debug').innerText += `Showing section: ${sectionId}\n`;
+    }
+
+    auth.onAuthStateChanged(user => {
+      console.log('Auth state changed:', user ? `User ${user?.uid}, Email: ${user?.email}` : 'No user');
+      document.getElementById('debug').innerText += `Auth state: ${user ? `Signed in as ${user.email}` : 'No user'}\n`;
+      if (user && user.uid && typeof user.uid === 'string') {
+        const businessRef = db.collection('businesses').doc(user.uid);
+        businessRef.get().then(doc => {
+          console.log('Business check result:', doc.exists);
+          document.getElementById('debug').innerText += `Business check: ${doc.exists ? 'Exists' : 'Not found'}\n`;
+          showSection(doc.exists ? 'dashboard' : 'businessRegistration');
+        }).catch(error => {
+          console.error('Error checking business:', error);
+          document.getElementById('debug').innerText += `Business check error: ${error.message}\n`;
+          alert('Error checking business: ' + error.message);
+          showSection('businessRegistration');
+        });
+      } else {
+        showSection('auth');
+      }
+    });
+
+    document.getElementById('showRegister').addEventListener('click', () => showSection('register'));
+    document.getElementById('showSignIn').addEventListener('click', () => showSection('auth'));
+
+    document.getElementById('signInForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('signInEmail').value;
+      const password = document.getElementById('signInPassword').value;
+      console.log('Sign-in attempt:', { email, passwordLength: password.length });
+      document.getElementById('debug').innerText += `Sign-in attempt: Email ${email}\n`;
+      try {
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        console.log('Sign-in successful, UID:', userCredential.user.uid);
+        document.getElementById('debug').innerText += `Sign-in successful, UID: ${userCredential.user.uid}\n`;
+        const user = auth.currentUser;
+        if (user) {
+          const businessRef = db.collection('businesses').doc(user.uid);
+          const doc = await businessRef.get();
+          showSection(doc.exists ? 'dashboard' : 'businessRegistration');
+        }
+      } catch (error) {
+        console.error('Sign-in error:', error.code, error.message);
+        document.getElementById('debug').innerText += `Sign-in error: ${error.code} - ${error.message}\n`;
+        alert('Sign-in failed: ' + error.message);
+      }
+    });
+
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('registerName').value;
+      const contact = document.getElementById('registerContact').value;
+      const email = document.getElementById('registerEmail').value;
+      const password = document.getElementById('registerPassword').value;
+      if (!/^(0\d{9}|\+27\d{9})$/.test(contact)) {
+        alert('Please enter a valid contact number (e.g., 0xxxxxxxxx or +27xxxxxxxxx).');
+        return;
+      }
+      console.log('Registration attempt:', { name, contact, email, passwordLength: password.length });
+      document.getElementById('debugRegister').innerText += `Registration attempt: Email ${email}\n`;
+      try {
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        await db.collection('users').doc(userCredential.user.uid).set({
+          name: name,
+          contact: contact,
+          email: email
+        });
+        console.log('Registration successful, UID:', userCredential.user.uid);
+        document.getElementById('debugRegister').innerText += `Registration successful, UID: ${userCredential.user.uid}\n`;
+        alert('Registration successful! Please sign in.');
+        showSection('auth');
+      } catch (error) {
+        console.error('Registration error:', error.code, error.message);
+        document.getElementById('debugRegister').innerText += `Registration error: ${error.code} - ${error.message}\n`;
+        alert('Registration failed: ' + error.message);
+      }
+    });
+
+    function signOut() {
+      auth.signOut().then(() => {
+        console.log('Signed out successfully');
+        document.getElementById('debug').innerText += 'Signed out successfully\n';
+        showSection('auth');
+      }).catch(error => {
+        console.error('Sign out error:', error);
+        document.getElementById('debug').innerText += `Sign out error: ${error.message}\n`;
+        alert('Error signing out: ' + error.message);
+      });
+    }
+
+    function getCurrentLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+            document.getElementById('googleMapsUrl').value = mapsUrl;
+            alert('Location set in Location for Business field.');
+          },
+          (error) => {
+            console.error('Geolocation error:', error);
+            alert('Error getting location: ' + error.message + '. Please enter a Google Maps URL.');
+          }
+        );
+      } else {
+        alert('Geolocation is not supported by your browser. Please enter a Google Maps URL.');
+      }
+    }
+
+    document.getElementById('businessType').addEventListener('change', (e) => {
+      const otherField = document.getElementById('businessTypeOther');
+      otherField.classList.toggle('conditional', e.target.value !== 'Other');
+      otherField.required = e.target.value === 'Other';
+    });
+
+    document.getElementById('hasBusinessAccount').addEventListener('change', (e) => {
+      const bankField = document.getElementById('bankName');
+      bankField.classList.toggle('conditional', e.target.value !== 'Yes');
+      bankField.required = e.target.value === 'Yes';
+    });
+
+    document.getElementById('businessForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const ownerName = document.getElementById('ownerName').value;
+      const ownerId = document.getElementById('ownerId').value;
+      const contactNumber = document.getElementById('contactNumber').value;
+      const residentialAddress = document.getElementById('residentialAddress').value;
+      const businessName = document.getElementById('businessName').value;
+      const businessContactNumber = document.getElementById('businessContactNumber').value;
+      let businessType = document.getElementById('businessType').value;
+      const businessTypeOther = document.getElementById('businessTypeOther').value;
+      const businessAddress = document.getElementById('businessAddress').value;
+      const googleMapsUrl = document.getElementById('googleMapsUrl').value;
+      const municipalityName = document.getElementById('municipalityName').value;
+      const operationYears = parseInt(document.getElementById('operationYears').value);
+      const operationMonths = parseInt(document.getElementById('operationMonths').value);
+      const hasBusinessAccount = document.getElementById('hasBusinessAccount').value;
+      const bankName = document.getElementById('bankName').value;
+      const user = auth.currentUser;
+
+      if (!/^(0\d{9}|\+27\d{9})$/.test(contactNumber)) {
+        alert('Please enter a valid contact number (e.g., 0xxxxxxxxx or +27xxxxxxxxx).');
+        return;
+      }
+      if (!/^(0\d{9}|\+27\d{9})$/.test(businessContactNumber)) {
+        alert('Please enter a valid business contact number (e.g., 0xxxxxxxxx or +27xxxxxxxxx).');
+        return;
+      }
+      if (businessType === 'Other' && !businessTypeOther) {
+        alert('Please specify the business type.');
+        return;
+      }
+      if (hasBusinessAccount === 'Yes' && !bankName) {
+        alert('Please select a bank.');
+        return;
+      }
+      if (!googleMapsUrl) {
+        alert('Please enter a Google Maps URL for the business location.');
+        return;
+      }
+
+      if (user) {
+        const refNumber = generateRefNumber();
+        await db.collection('businesses').doc(user.uid).set({
+          ownerName,
+          ownerId,
+          contactNumber,
+          residentialAddress,
+          businessName,
+          businessContactNumber,
+          businessType: businessType === 'Other' ? businessTypeOther : businessType,
+          businessAddress,
+          googleMapsUrl,
+          municipalityName,
+          operationYears,
+          operationMonths,
+          hasBusinessAccount,
+          bankName: hasBusinessAccount === 'Yes' ? bankName : null,
+          userId: user.uid,
+          refNumber: refNumber
+        });
+        alert(`Registration Submitted. Ref no: ${refNumber}`);
+        showSection('dashboard');
+      } else {
+        alert('Please sign in to register a business.');
+      }
+    });
+
+    function generateRefNumber() {
+      const datePart = new Date().toISOString().slice(2, 10).replace(/-/g, ''); // YYMMDD
+      const randomPart = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit random number
+      return `${datePart}${randomPart}`;
+    }
+
+    async function loadBusinessDetails() {
+      const user = auth.currentUser;
+      if (user) {
+        const businessDoc = await db.collection('businesses').doc(user.uid).get();
+        if (businessDoc.exists) {
+          const data = businessDoc.data();
+          document.getElementById('businessRegistration').innerHTML = `
+            <div class="business-hub">
+              <a href="#" onclick="showSection('dashboard')">←</a>
+              <h2>Register Your Business</h2>
+            </div>
+            <p><strong>Owner Name:</strong> ${data.ownerName}</p>
+            <p><strong>ID/Passport:</strong> ${data.ownerId}</p>
+            <p><strong>Contact Number:</strong> ${data.contactNumber}</p>
+            <p><strong>Residential Address:</strong> ${data.residentialAddress}</p>
+            <p><strong>Business Name:</strong> ${data.businessName}</p>
+            <p><strong>Business Contact Number:</strong> ${data.businessContactNumber}</p>
+            <p><strong>Business Type:</strong> ${data.businessType}</p>
+            <p><strong>Business Address:</strong> ${data.businessAddress}</p>
+            <p><strong>Location URL:</strong> <a href="${data.googleMapsUrl}" target="_blank">${data.googleMapsUrl}</a></p>
+            <p><strong>Municipality Name:</strong> ${data.municipalityName}</p>
+            <p><strong>Operation Time:</strong> ${data.operationYears} years, ${data.operationMonths} months</p>
+            <p><strong>Business Account:</strong> ${data.hasBusinessAccount}${data.bankName ? ' (' + data.bankName + ')' : ''}</p>
+            <p><strong>Reference Number:</strong> ${data.refNumber}</p>
+          `;
+        } else {
+          document.getElementById('businessRegistration').innerHTML = `
+            <div class="business-hub">
+              <a href="#" onclick="showSection('dashboard')">←</a>
+              <h2>Register Your Business</h2>
+            </div>
+            <form id="businessForm">
+              <input type="text" id="ownerName" placeholder="Owner Name" required><br>
+              <input type="text" id="ownerId" placeholder="ID/Passport Number" required><br>
+              <input type="tel" id="contactNumber" placeholder="Contact Number (e.g., 0xxxxxxxxx or +27xxxxxxxxx)" required><br>
+              <input type="text" id="residentialAddress" placeholder="Residential Address" required><br>
+              <input type="text" id="businessName" placeholder="Business Name" required><br>
+              <input type="tel" id="businessContactNumber" placeholder="Business Contact Number (e.g., 0xxxxxxxxx or +27xxxxxxxxx)" required><br>
+              <select id="businessType" required>
+                <option value="" disabled selected>Select Business Type</option>
+                <option value="Spaza/Tuck shop">Spaza/Tuck shop</option>
+                <option value="Supermarket">Supermarket</option>
+                <option value="Fast Food">Fast Food</option>
+                <option value="Street hawker/vendor">Street hawker/vendor</option>
+                <option value="Salon/Barber">Salon/Barber</option>
+                <option value="Car Wash">Car Wash</option>
+                <option value="Home Based Business">Home Based Business</option>
+                <option value="Informal transport">Informal transport</option>
+                <option value="Other">Other</option>
+              </select><br>
+              <input type="text" id="businessTypeOther" placeholder="Specify Business Type" class="conditional"><br>
+              <input type="text" id="businessAddress" placeholder="Business Address" required><br>
+              <input type="text" id="googleMapsUrl" placeholder="Location for Business (Google Maps URL)" required><br>
+              <input type="text" id="municipalityName" placeholder="Municipality Name" required><br>
+              <input type="number" id="operationYears" placeholder="Years in Operation" min="0" required><br>
+              <input type="number" id="operationMonths" placeholder="Months in Operation" min="0" max="11" required><br>
+              <select id="hasBusinessAccount" required>
+                <option value="" disabled selected>Do you have a business account?</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select><br>
+              <select id="bankName" class="conditional">
+                <option value="" disabled selected>Select Bank</option>
+                <option value="ABSA">ABSA</option>
+                <option value="Bidvest">Bidvest</option>
+                <option value="Capitec">Capitec</option>
+                <option value="FNB">FNB</option>
+                <option value="Nedbank">Nedbank</option>
+                <option value="Standard Bank">Standard Bank</option>
+                <option value="TymeBank">TymeBank</option>
+              </select><br>
+              <button type="submit">Register Business</button>
+            </form>
+          `;
+          document.getElementById('businessType').addEventListener('change', (e) => {
+            const otherField = document.getElementById('businessTypeOther');
+            otherField.classList.toggle('conditional', e.target.value !== 'Other');
+            otherField.required = e.target.value === 'Other';
+          });
+          document.getElementById('hasBusinessAccount').addEventListener('change', (e) => {
+            const bankField = document.getElementById('bankName');
+            bankField.classList.toggle('conditional', e.target.value !== 'Yes');
+            bankField.required = e.target.value === 'Yes';
+          });
+          document.getElementById('businessForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const ownerName = document.getElementById('ownerName').value;
+            const ownerId = document.getElementById('ownerId').value;
+            const contactNumber = document.getElementById('contactNumber').value;
+            const residentialAddress = document.getElementById('residentialAddress').value;
+            const businessName = document.getElementById('businessName').value;
+            const businessContactNumber = document.getElementById('businessContactNumber').value;
+            let businessType = document.getElementById('businessType').value;
+            const businessTypeOther = document.getElementById('businessTypeOther').value;
+            const businessAddress = document.getElementById('businessAddress').value;
+            const googleMapsUrl = document.getElementById('googleMapsUrl').value;
+            const municipalityName = document.getElementById('municipalityName').value;
+            const operationYears = parseInt(document.getElementById('operationYears').value);
+            const operationMonths = parseInt(document.getElementById('operationMonths').value);
+            const hasBusinessAccount = document.getElementById('hasBusinessAccount').value;
+            const bankName = document.getElementById('bankName').value;
+            const user = auth.currentUser;
+
+            if (!/^(0\d{9}|\+27\d{9})$/.test(contactNumber)) {
+              alert('Please enter a valid contact number (e.g., 0xxxxxxxxx or +27xxxxxxxxx).');
+              return;
+            }
+            if (!/^(0\d{9}|\+27\d{9})$/.test(businessContactNumber)) {
+              alert('Please enter a valid business contact number (e.g., 0xxxxxxxxx or +27xxxxxxxxx).');
+              return;
+            }
+            if (businessType === 'Other' && !businessTypeOther) {
+              alert('Please specify the business type.');
+              return;
+            }
+            if (hasBusinessAccount === 'Yes' && !bankName) {
+              alert('Please select a bank.');
+              return;
+            }
+            if (!googleMapsUrl) {
+              alert('Please enter a Google Maps URL for the business location.');
+              return;
+            }
+
+            if (user) {
+              const refNumber = generateRefNumber();
+              await db.collection('businesses').doc(user.uid).set({
+                ownerName,
+                ownerId,
+                contactNumber,
+                residentialAddress,
+                businessName,
+                businessContactNumber,
+                businessType: businessType === 'Other' ? businessTypeOther : businessType,
+                businessAddress,
+                googleMapsUrl,
+                municipalityName,
+                operationYears,
+                operationMonths,
+                hasBusinessAccount,
+                bankName: hasBusinessAccount === 'Yes' ? bankName : null,
+                userId: user.uid,
+                refNumber: refNumber
+              });
+              alert(`Registration Submitted. Ref no: ${refNumber}`);
+              showSection('dashboard');
+            } else {
+              alert('Please sign in to register a business.');
+            }
+          });
+        }
+      }
+    }
+
+    async function loadSales() {
+      const user = auth.currentUser;
+      if (user) {
+        const salesSnapshot = await db.collection('sales').where('userId', '==', user.uid).get();
+        const table = document.getElementById('salesTable');
+        table.innerHTML = `
+          <tr>
+            <th>Date</th>
+            <th>Amount</th>
+            <th>Cost</th>
+            <th>Type</th>
+          </tr>
+        `;
+
+        salesSnapshot.docs.forEach(doc => {
+          const data = doc.data();
+          const row = table.insertRow();
+          row.innerHTML = `
+            <td>${data.date}</td>
+            <td>R${data.amount.toFixed(2)}</td>
+            <td>R${data.cost.toFixed(2)}</td>
+            <td>Sale</td>
+          `;
+        });
+      }
+    }
+
+    document.getElementById('salesForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const amount = parseFloat(document.getElementById('saleAmount').value);
+      const cost = parseFloat(document.getElementById('saleCost').value);
+      const date = document.getElementById('saleDate').value;
+      const user = auth.currentUser;
+
+      if (user) {
+        await db.collection('sales').add({
+          amount,
+          cost,
+          date,
+          userId: user.uid,
+          type: 'sale'
+        });
+        alert('Sale added successfully!');
+        document.getElementById('salesForm').reset();
+        loadSales();
+      }
+    });
+
+    document.getElementById('expensesForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const amount = parseFloat(document.getElementById('expenseAmount').value);
+      const category = document.getElementById('expenseCategory').value;
+      const date = document.getElementById('expenseDate').value;
+      const user = auth.currentUser;
+
+      if (user) {
+        await db.collection('expenses').add({
+          amount,
+          category,
+          date,
+          userId: user.uid,
+          type: 'expense'
+        });
+        alert('Expense added successfully!');
+        document.getElementById('expensesForm').reset();
+      }
+    });
+
+    async function generateReport() {
+      const period = document.getElementById('reportPeriod').value;
+      const user = auth.currentUser;
+      if (user) {
+        const salesSnapshot = await db.collection('sales').where('userId', '==', user.uid).get();
+        const expensesSnapshot = await db.collection('expenses').where('userId', '==', user.uid).get();
+        let sales = salesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        let expenses = expensesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        const now = new Date();
+        let startDate, endDate;
+
+        if (period === 'daily') {
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+        } else if (period === 'weekly') {
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+          endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() + 7);
+        } else if (period === 'monthly') {
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          endDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        } else if (period === 'yearToDate') {
+          startDate = new Date(now.getFullYear(), 0, 1);
+          endDate = new Date(now.getFullYear() + 1, 0, 1);
+        }
+
+        sales = sales.filter(sale => {
+          const saleDate = new Date(sale.date);
+          return saleDate >= startDate && saleDate < endDate;
+        });
+
+        expenses = expenses.filter(expense => {
+          const expenseDate = new Date(expense.date);
+          return expenseDate >= startDate && expenseDate < endDate;
+        });
+
+        const monthlyTotals = {};
+        sales.forEach(sale => {
+          const monthYear = sale.date.slice(0, 7); // e.g., "2025-06"
+          if (!monthlyTotals[monthYear]) monthlyTotals[monthYear] = { sales: 0, costs: 0 };
+          monthlyTotals[monthYear].sales += sale.amount;
+          monthlyTotals[monthYear].costs += sale.cost;
+        });
+        expenses.forEach(expense => {
+          const monthYear = expense.date.slice(0, 7);
+          if (!monthlyTotals[monthYear]) monthlyTotals[monthYear] = { sales: 0, costs: 0, expenses: 0 };
+          monthlyTotals[monthYear].expenses = (monthlyTotals[monthYear].expenses || 0) + expense.amount;
+        });
+
+        let totalSales = 0, totalCosts = 0, totalExpenses = 0;
+        for (let month in monthlyTotals) {
+          totalSales += monthlyTotals[month].sales;
+          totalCosts += monthlyTotals[month].costs;
+          totalExpenses += monthlyTotals[month].expenses || 0;
+        }
+        const income = totalSales - totalCosts;
+        const profit = income - totalExpenses;
+
+        let reportContent = `
+          <h3>${period.charAt(0).toUpperCase() + period.replace('yearToDate', 'Year to Date').slice(1)} Report</h3>
+          <table>
+            <tr><th>Metric</th><th>Amount</th></tr>
+            <tr><td>Total Sales</td><td>R${totalSales.toFixed(2)}</td></tr>
+            <tr><td>Total Costs</td><td>R${totalCosts.toFixed(2)}</td></tr>
+            <tr><td>Income (Sales - Costs)</td><td>R${income.toFixed(2)}</td></tr>
+            <tr><td>Total Expenses</td><td>R${totalExpenses.toFixed(2)}</td></tr>
+            <tr><td>Profit (Income - Expenses)</td><td>R${profit.toFixed(2)}</td></tr>
+          </table>
+        `;
+
+        document.getElementById('reportOutput').innerHTML = reportContent;
+      }
+    }
+
+    async function estimateTax() {
+      const taxMonth = document.getElementById('taxMonth').value;
+      const user = auth.currentUser;
+      if (user && taxMonth) {
+        const [year, month] = taxMonth.split('-').map(Number);
+        const startDate = new Date(year, month - 1, 1);
+        const endDate = new Date(year, month, 1);
+
+        const salesSnapshot = await db.collection('sales').where('userId', '==', user.uid).get();
+        const expensesSnapshot = await db.collection('expenses').where('userId', '==', user.uid).get();
+
+        let sales = salesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        let expenses = expensesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        sales = sales.filter(sale => {
+          const saleDate = new Date(sale.date);
+          return saleDate >= startDate && saleDate < endDate;
+        });
+
+        expenses = expenses.filter(expense => {
+          const expenseDate = new Date(expense.date);
+          return expenseDate >= startDate && expenseDate < endDate;
+        });
+
+        const totalSales = sales.reduce((sum, sale) => sum + sale.amount, 0);
+        const totalCosts = sales.reduce((sum, sale) => sum + sale.cost, 0);
+        const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+        const taxableIncome = totalSales - totalCosts - totalExpenses;
+
+        const taxRate = 0.15; // Example: 15% flat rate for small businesses
+        const estimatedTax = taxableIncome * taxRate;
+
+        document.getElementById('taxOutput').innerHTML = `
+          <h3>Tax Estimation for ${taxMonth}</h3>
+          <p>Taxable Income: R${taxableIncome.toFixed(2)}</p>
+          <p>Estimated Tax (15%): R${estimatedTax.toFixed(2)}</p>
+        `;
+      } else {
+        alert('Please select a month.');
+      }
+    }
+
+    async function exportMonthlyData() {
+      const user = auth.currentUser;
+      if (!user) {
+        alert('Please sign in to export data.');
+        return;
+      }
+
+      try {
+        const salesSnapshot = await db.collection('sales').where('userId', '==', user.uid).get();
+        const expensesSnapshot = await db.collection('expenses').where('userId', '==', user.uid).get();
+
+        const sales = salesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const expenses = expensesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        const now = new Date();
+        let startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        let endDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+        let filteredSales = sales.filter(sale => {
+          const saleDate = new Date(sale.date);
+          return saleDate >= startDate && saleDate < endDate;
+        });
+
+        let filteredExpenses = expenses.filter(expense => {
+          const expenseDate = new Date(expense.date);
+          return expenseDate >= startDate && expenseDate < endDate;
+        });
+
+        const totalSales = filteredSales.reduce((sum, sale) => sum + sale.amount, 0) || 0;
+        const totalCosts = filteredSales.reduce((sum, sale) => sum + sale.cost, 0) || 0;
+        const income = totalSales - totalCosts;
+        const totalExpenses = filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0) || 0;
+        const profit = income - totalExpenses;
+
+        const csvData = [
+          ['Date', 'Sales', 'Cost of Sales', 'Income', 'Expenses', 'Profit']
+        ];
+
+        csvData.push([
+          now.toISOString().split('T')[0],
+          totalSales.toFixed(2),
+          totalCosts.toFixed(2),
+          income.toFixed(2),
+          filteredExpenses.length > 0 ? filteredExpenses.map(exp => `${exp.category}: R${exp.amount.toFixed(2)}`).join(', ') : 'None',
+          profit.toFixed(2)
+        ]);
+
+        const csvContent = csvData.map(row => row.join(';')).join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'monthly_business_data.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        console.log('Monthly data exported successfully');
+        document.getElementById('debug').innerText += 'Monthly data exported successfully\n';
+      } catch (error) {
+        console.error('Error exporting monthly data:', error);
+        document.getElementById('debug').innerText += `Error exporting monthly data: ${error.message}\n`;
+        alert('Failed to export monthly data: ' + error.message);
+      }
+    }
+
+    async function exportYearToDateData() {
+      const user = auth.currentUser;
+      if (!user) {
+        alert('Please sign in to export data.');
+        return;
+      }
+
+      try {
+        const salesSnapshot = await db.collection('sales').where('userId', '==', user.uid).get();
+        const expensesSnapshot = await db.collection('expenses').where('userId', '==', user.uid).get();
+
+        const sales = salesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const expenses = expensesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        const now = new Date();
+        let startDate = new Date(now.getFullYear(), 0, 1);
+        let endDate = new Date(now.getFullYear() + 1, 0, 1);
+
+        let filteredSales = sales.filter(sale => {
+          const saleDate = new Date(sale.date);
+          return saleDate >= startDate && saleDate < endDate;
+        });
+
+        let filteredExpenses = expenses.filter(expense => {
+          const expenseDate = new Date(expense.date);
+          return expenseDate >= startDate && expenseDate < endDate;
+        });
+
+        const monthlyTotals = {};
+        filteredSales.forEach(sale => {
+          const monthYear = sale.date.slice(0, 7); // e.g., "2025-06"
+          if (!monthlyTotals[monthYear]) monthlyTotals[monthYear] = { sales: 0, costs: 0 };
+          monthlyTotals[monthYear].sales += sale.amount;
+          monthlyTotals[monthYear].costs += sale.cost;
+        });
+        filteredExpenses.forEach(expense => {
+          const monthYear = expense.date.slice(0, 7);
+          if (!monthlyTotals[monthYear]) monthlyTotals[monthYear] = { sales: 0, costs: 0, expenses: 0 };
+          monthlyTotals[monthYear].expenses = (monthlyTotals[monthYear].expenses || 0) + expense.amount;
+        });
+
+        const csvData = [
+          ['Month', 'Total Sales', 'Total Cost of Sales', 'Total Income', 'Total Expenses', 'Total Profit']
+        ];
+
+        const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        let grandTotalSales = 0, grandTotalCosts = 0, grandTotalExpenses = 0, grandTotalIncome = 0, grandTotalProfit = 0;
+
+        for (let i = 0; i < 12; i++) {
+          const monthYear = `${now.getFullYear()}-${String(i + 1).padStart(2, '0')}`;
+          const monthName = months[i];
+          const data = monthlyTotals[monthYear] || { sales: 0, costs: 0, expenses: 0 };
+          const income = data.sales - data.costs;
+          const profit = income - data.expenses;
+
+          csvData.push([
+            monthName,
+            data.sales.toFixed(2),
+            data.costs.toFixed(2),
+            income.toFixed(2),
+            data.expenses.toFixed(2),
+            profit.toFixed(2)
+          ]);
+
+          grandTotalSales += data.sales;
+          grandTotalCosts += data.costs;
+          grandTotalExpenses += data.expenses;
+          grandTotalIncome += income;
+          grandTotalProfit += profit;
+        }
+
+        csvData.push([
+          'Total',
+          grandTotalSales.toFixed(2),
+          grandTotalCosts.toFixed(2),
+          grandTotalIncome.toFixed(2),
+          grandTotalExpenses.toFixed(2),
+          grandTotalProfit.toFixed(2)
+        ]);
+
+        const csvContent = csvData.map(row => row.join(';')).join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'year_to_date_business_data.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        console.log('Year to Date data exported successfully');
+        document.getElementById('debug').innerText += 'Year to Date data exported successfully\n';
+      } catch (error) {
+        console.error('Error exporting Year to Date data:', error);
+        document.getElementById('debug').innerText += `Error exporting Year to Date data: ${error.message}\n`;
+        alert('Failed to export Year to Date data: ' + error.message);
+      }
+    }
+
+    async function loadUserInfo() {
+      const user = auth.currentUser;
+      if (user) {
+        const userDoc = await db.collection('users').doc(user.uid).get();
+        if (userDoc.exists) {
+          const data = userDoc.data();
+          document.getElementById('userName').textContent = data.name;
+          document.getElementById('userContact').textContent = data.contact;
+          document.getElementById('userEmail').textContent = data.email;
+        }
+      }
+    }
+
+    document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const newPassword = document.getElementById('newPassword').value;
+      const user = auth.currentUser;
+
+      if (user) {
+        try {
+          await user.updatePassword(newPassword);
+          await signOut();
+          alert('Password changed successfully! Please sign in with your new password.');
+          document.getElementById('changePasswordForm').reset();
+        } catch (error) {
+          console.error('Password change error:', error.message);
+          document.getElementById('debug').innerText += `Password change error: ${error.message}\n`;
+          alert('Failed to change password: ' + error.message);
+        }
+      }
+    });
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(registration => {
+            console.log('Service Worker registered with scope:', registration.scope);
+            document.getElementById('debug').innerText += `Service Worker registered: ${registration.scope}\n`;
+          })
+          .catch(error => {
+            console.error('Service Worker registration failed:', error);
+            document.getElementById('debug').innerText += `Service Worker error: ${error.message}\n`;
+          });
+      });
+    }
+  </script>
+</body>
+</html>
