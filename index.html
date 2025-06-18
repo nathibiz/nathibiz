@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- User zoom discretion preserved -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes"> <!-- Fixed initial scale, user can zoom -->
   <title>Business & Financial Tracker</title>
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" type="image/png" href="/icon-192x192.png">
@@ -378,11 +378,13 @@
 
     document.getElementById('signInForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const email = document.getElementById('signInEmail').value;
-      const password = document.getElementById('signInPassword').value;
+      const email = document.getElementById('signInEmail').value.trim();
+      const password = document.getElementById('signInPassword').value.trim();
       console.log('Sign-in attempt:', { email, passwordLength: password.length });
       document.getElementById('debug').innerText += `Sign-in attempt: Email ${email}\n`;
       try {
+        // Ensure form is in view and not affected by zoom
+        document.getElementById('signInForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
         console.log('Sign-in successful, UID:', userCredential.user.uid);
         document.getElementById('debug').innerText += `Sign-in successful, UID: ${userCredential.user.uid}\n`;
