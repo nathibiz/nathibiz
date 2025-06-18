@@ -162,6 +162,10 @@
           <img src="https://img.icons8.com/ios-filled/50/047857/user.png" alt="User">
           User
         </button>
+        <button class="hub-button" onclick="showSection('skillsDevelopment')">
+          <img src="https://img.icons8.com/ios-filled/50/047857/graduation-cap.png" alt="Skills">
+          Skills Development
+        </button>
       </div>
       <button class="hub-button" onclick="signOut()">Sign Out</button>
     </section>
@@ -269,6 +273,47 @@
         </form>
       </div>
     </section>
+
+    <section id="skillsDevelopment" class="hidden">
+      <div class="business-hub">
+        <a href="#" onclick="showSection('dashboard')">←</a>
+        <h2>Skills Development Hub</h2>
+      </div>
+      <div class="hub-grid">
+        <button class="hub-button" onclick="alert('Placeholder: Project Management Course')">
+          <img src="https://img.icons8.com/ios-filled/50/047857/checklist.png" alt="Project Management">
+          Project Management
+        </button>
+        <button class="hub-button" onclick="alert('Placeholder: Customer Service Excellence Course')">
+          <img src="https://img.icons8.com/ios-filled/50/047857/customer-service.png" alt="Customer Service">
+          Customer Service Excellence
+        </button>
+        <button class="hub-button" onclick="alert('Placeholder: Conflict Management Course')">
+          <img src="https://img.icons8.com/ios-filled/50/047857/handshake.png" alt="Conflict Management">
+          Conflict Management
+        </button>
+        <button class="hub-button" onclick="alert('Placeholder: Time Management Course')">
+          <img src="https://img.icons8.com/ios-filled/50/047857/clock.png" alt="Time Management">
+          Time Management
+        </button>
+        <button class="hub-button" onclick="alert('Placeholder: Communication Skills Course')">
+          <img src="https://img.icons8.com/ios-filled/50/047857/speech-bubble.png" alt="Communication">
+          Communication Skills
+        </button>
+        <button class="hub-button" onclick="alert('Placeholder: Sales Skills Course')">
+          <img src="https://img.icons8.com/ios-filled/50/047857/sale.png" alt="Sales Skills">
+          Sales Skills
+        </button>
+        <button class="hub-button" onclick="alert('Placeholder: Financial Management Course')">
+          <img src="https://img.icons8.com/ios-filled/50/047857/money-bag.png" alt="Financial Management">
+          Financial Management
+        </button>
+        <button class="hub-button" onclick="alert('Placeholder: Entrepreneurship Training Course')">
+          <img src="https://img.icons8.com/ios-filled/50/047857/idea.png" alt="Entrepreneurship">
+          Entrepreneurship Training
+        </button>
+      </div>
+    </section>
   </div>
 
   <script>
@@ -341,7 +386,6 @@
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
         console.log('Sign-in successful, UID:', userCredential.user.uid);
         document.getElementById('debug').innerText += `Sign-in successful, UID: ${userCredential.user.uid}\n`;
-        // Manually check and update section after sign-in
         const user = auth.currentUser;
         if (user) {
           const businessRef = db.collection('businesses').doc(user.uid);
@@ -976,7 +1020,6 @@
           grandTotalProfit += profit;
         }
 
-        // Add Total Row
         csvData.push([
           'Total',
           grandTotalSales.toFixed(2),
@@ -1025,7 +1068,7 @@
       if (user) {
         try {
           await user.updatePassword(newPassword);
-          await signOut(); // Sign out the user after password change
+          await signOut();
           alert('Password changed successfully! Please sign in with your new password.');
           document.getElementById('changePasswordForm').reset();
         } catch (error) {
@@ -1037,17 +1080,17 @@
     });
 
     if ('serviceWorker' in navigator) {
-      // window.addEventListener('load', () => {
-      //   navigator.serviceWorker.register('/sw.js')
-      //     .then(registration => {
-      //       console.log('Service Worker registered with scope:', registration.scope);
-      //       document.getElementById('debug').innerText += `Service Worker registered: ${registration.scope}\n`;
-      //     })
-      //     .catch(error => {
-      //       console.error('Service Worker registration failed:', error);
-      //       document.getElementById('debug').innerText += `Service Worker error: ${error.message}\n`;
-      //     });
-      // });
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(registration => {
+            console.log('Service Worker registered with scope:', registration.scope);
+            document.getElementById('debug').innerText += `Service Worker registered: ${registration.scope}\n`;
+          })
+          .catch(error => {
+            console.error('Service Worker registration failed:', error);
+            document.getElementById('debug').innerText += `Service Worker error: ${error.message}\n`;
+          });
+      });
     }
   </script>
 </body>
